@@ -17,6 +17,7 @@
       <button id="nextBtn" class="icon-btn">›</button>
     </header>
 
+    <!-- Main calendar views -->
     <main class="main">
       <section id="dayView" class="view"></section>
       <section id="weekView" class="view"></section>
@@ -26,12 +27,25 @@
 
     <!-- Bottom Navigation -->
     <nav class="bottom-nav">
-      <button class="nav-btn active" data-view="day">Day</button>
+      <button class="nav-btn" data-view="day">Day</button>
       <button class="nav-btn" data-view="week">Week</button>
-      <button class="nav-btn" data-view="month">Month</button>
+      <button class="nav-btn active" data-view="month">Month</button>
       <button class="nav-btn" data-view="year">Year</button>
       <button id="todayBtn" class="nav-btn">Today</button>
     </nav>
+  </div>
+
+  <!-- Event Modal -->
+  <div id="eventModal" class="modal hidden">
+    <div class="modal-content">
+      <h2 id="modalDate"></h2>
+      <ul id="eventList"></ul>
+      <input id="eventInput" type="text" placeholder="New event...">
+      <div class="modal-actions">
+        <button id="addEventBtn">Add</button>
+        <button id="closeModalBtn">Close</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>
