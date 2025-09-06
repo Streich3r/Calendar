@@ -8,3 +8,4 @@ Simple Calendar for offline using
 - Offline-ready
 - touch/mouse/keyboard-ready
 - Dark Mode
+- PWA-ready
