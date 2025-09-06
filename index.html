@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline Multi-View Calendar PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .calendar-controls { margin-bottom: 20px; }
+    button { margin-right: 5px; padding: 5px 10px; }
+    .calendar { display: grid; gap: 5px; }
+    .day, .month-cell, .week-day { padding: 10px; border: 1px solid #ccc; text-align: center; }
+    .today { background: #007bff; color: white; }
+    .week-row { display: flex; }
+    .month-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+  </style>
+</head>
+<body>
+
+  <div class="calendar-controls">
+    <button onclick="setView('year')">Year</button>
+    <button onclick="setView('month')">Month</button>
+    <button onclick="setView('week')">Week</button>
+    <button onclick="setView('day')">Day</button>
+  </div>
+
+  <div id="calendar" class="calendar"></div>
+
+  <script src="sw.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(reg => console.log('Service Worker Registered', reg))
+        .catch(err => console.log('Service Worker Failed', err));
+    }
+
+    setView('day'); // default
+  </script>
+</body>
+</html>
