@@ -4,28 +4,18 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
   <title>Calendar</title>
-  <meta name="theme-color" content="#0b0b0f"/>
-
+  <meta name="theme-color" content="#202124"/>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="app" class="app">
+    <!-- Top App Bar -->
     <header class="topbar">
       <button id="prevBtn" class="icon-btn">‹</button>
-      <div class="title-wrap">
-        <h1 id="title" class="title">Month Year</h1>
-        <small id="localDate"></small>
-      </div>
+      <h1 id="title" class="title">Month Year</h1>
       <button id="nextBtn" class="icon-btn">›</button>
     </header>
-
-    <nav class="view-toggle">
-      <button class="view-btn active" data-view="day">Day</button>
-      <button class="view-btn" data-view="week">Week</button>
-      <button class="view-btn" data-view="month">Month</button>
-      <button class="view-btn" data-view="year">Year</button>
-    </nav>
 
     <main class="main">
       <section id="dayView" class="view"></section>
@@ -33,6 +23,15 @@
       <section id="monthView" class="view"></section>
       <section id="yearView" class="view"></section>
     </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-view="day">Day</button>
+      <button class="nav-btn" data-view="week">Week</button>
+      <button class="nav-btn" data-view="month">Month</button>
+      <button class="nav-btn" data-view="year">Year</button>
+      <button id="todayBtn" class="nav-btn">Today</button>
+    </nav>
   </div>
 
   <script src="app.js"></script>
