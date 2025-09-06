@@ -1,3 +1,4 @@
+/* General.. */
 function $(id){return document.getElementById(id);}
 let currentDate = new Date();
 let currentView = "month";
@@ -84,3 +85,4 @@ $("nextBtn").onclick=()=>{ if(currentView==="day")currentDate.setDate(currentDat
 setInterval(()=>{let now=new Date();if(now.getDate()!==currentDate.getDate()){currentDate=new Date();render();}},60000);
 
 render();
+
