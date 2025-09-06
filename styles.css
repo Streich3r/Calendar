@@ -1,16 +1,87 @@
+/* General */
 body{
-  margin:0;background:#0b0b0f;color:#e6eef8;font-family:sans-serif;
-  height:100%;display:flex;flex-direction:column;
+  margin:0;
+  font-family:Roboto, Arial, sans-serif;
+  background:#202124;
+  color:#e8eaed;
+  height:100%;
+  display:flex;
+  flex-direction:column;
 }
 .app{flex:1;display:flex;flex-direction:column;}
+h1,h2,h3,p{margin:0}
+
+/* Top bar */
 .topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px;background:#111;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#303134;
+  color:#fff;
+  padding:12px;
+  font-size:18px;
 }
-.title{margin:0;font-size:16px}
-.icon-btn{background:#222;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:20px}
-.view-toggle{display:flex;justify-content:space-around;background:#151515}
-.view-btn{flex:1;padding:12px;border:none;background:#151515;color:#aaa;font-size:14px}
-.view-btn.active{color:#fff;border-bottom:2px solid #7c5cff}
-.main{flex:1;overflow:auto;padding:10px}
-.view{min-height:100%}
+.icon-btn{
+  background:none;
+  border:none;
+  color:#e8eaed;
+  font-size:22px;
+  padding:8px;
+  cursor:pointer;
+}
+
+/* Main content */
+.main{
+  flex:1;
+  overflow:auto;
+  padding:10px;
+}
+
+/* Bottom navigation */
+.bottom-nav{
+  display:flex;
+  justify-content:space-around;
+  background:#303134;
+  border-top:1px solid #444;
+}
+.nav-btn{
+  flex:1;
+  padding:12px 0;
+  border:none;
+  background:transparent;
+  color:#9aa0a6;
+  font-size:14px;
+}
+.nav-btn.active, .nav-btn:focus{
+  color:#fff;
+  border-top:2px solid #8ab4f8;
+}
+
+/* Month grid */
+.month-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:2px;
+  text-align:center;
+}
+.weekdays{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  background:#303134;
+  font-size:12px;
+  padding:4px 0;
+  color:#9aa0a6;
+}
+.day-cell{
+  padding:14px 0;
+  background:#202124;
+}
+.day-cell.today{
+  background:#1a73e8;
+  color:#fff;
+  border-radius:50%;
+  width:36px;
+  height:36px;
+  margin:0 auto;
+  line-height:36px;
+}
