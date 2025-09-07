@@ -27,7 +27,11 @@ html, body {
   overflow-y: auto;
 }
 
-.view { flex: 1; width: 100%; }
+.view {
+  flex: 1;
+  display: block;
+  min-height: 100%; /* ensure calendar always visible */
+}
 
 .footer {
   background: var(--panel);
@@ -133,6 +137,7 @@ html, body {
   padding: 6px;
   border-radius: 6px;
   font-size: 11px;
+  overflow: hidden;
 }
 .year-month strong { font-size: 13px; }
 
