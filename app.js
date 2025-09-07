@@ -198,4 +198,17 @@ else if(currentView==="year") currentDate.setFullYear(currentDate.getFullYear()-
 
 function next(){ if(currentView==="day") currentDate.setDate(currentDate.getDate()+1);
 else if(currentView==="week") currentDate.setDate(currentDate.getDate()+7);
-else if(currentView==="month") currentDate.setMonth(currentDate.getMonth()+1
+else if(currentView==="month") currentDate.setMonth(currentDate.getMonth()+1);
+else if(currentView==="year") currentDate.setFullYear(currentDate.getFullYear()+1); render(); }
+
+$("prevBtn").onclick=prev; $("nextBtn").onclick=next;
+
+/* Swipe support */
+let touchStartX=0;
+document.addEventListener("touchstart", e=>{touchStartX=e.touches[0].clientX;});
+document.addEventListener("touchend", e=>{
+  let dx=e.changedTouches[0].clientX-touchStartX;
+  if(Math.abs(dx)>50){ if(dx<0) next(); else prev(); }
+});
+
+render();
