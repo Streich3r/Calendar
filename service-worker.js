@@ -1,5 +1,5 @@
 const CACHE_NAME = "calendar-cache-v1";
-const FILES_TO_CACHE = [
+const FILES = [
   "./",
   "./index.html",
   "./styles.css",
@@ -7,14 +7,13 @@ const FILES_TO_CACHE = [
   "./manifest.json"
 ];
 
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
-  );
+self.addEventListener('install', evt=>{
+  evt.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(FILES)));
+  self.skipWaiting();
 });
-
-self.addEventListener("fetch", e => {
-  e.respondWith(
-    caches.match(e.request).then(resp => resp || fetch(e.request))
-  );
+self.addEventListener('activate', evt=>{
+  evt.waitUntil(self.clients.claim());
+});
+self.addEventListener('fetch', evt=>{
+  evt.respondWith(caches.match(evt.request).then(r => r || fetch(evt.request)));
 });
