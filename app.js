@@ -1,3 +1,4 @@
+// ...
 function $(id){return document.getElementById(id);}
 let currentDate = new Date();
 let currentView = "month";
