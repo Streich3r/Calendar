@@ -180,7 +180,7 @@ function renderEventList(dateStr){
   });
 }
 
-/* ---------- NAVIGATION ---------- */
+/* ----------- NAVIGATION ----------- */
 $("todayBtn").onclick = ()=>{ currentDate=new Date(); render(); };
 document.querySelectorAll(".nav-btn[data-view]").forEach(btn=>{
   btn.onclick = ()=>{
