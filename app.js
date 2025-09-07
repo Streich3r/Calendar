@@ -18,7 +18,6 @@ function germanHolidays(year){
 }
 
 /* ---------- RENDERING ---------- */
-
 function render(){
   $("title").textContent = titleText();
   for(const v in views){ views[v].style.display = "none"; }
@@ -32,7 +31,7 @@ function render(){
 function titleText(){
   if(currentView==="day") return currentDate.toDateString();
   if(currentView==="week"){
-    const start = new Date(currentDate); start.setDate(currentDate.getDate()-currentDate.getDay()+1);
+    const start = new Date(currentDate); start.setDate(currentDate.getDate()-((currentDate.getDay()+6)%7));
     const end = new Date(start); end.setDate(start.getDate()+6);
     return `${start.toLocaleDateString()} – ${end.toLocaleDateString()}`;
   }
@@ -44,9 +43,8 @@ function titleText(){
 function renderMonth(){
   const y = currentDate.getFullYear(), m = currentDate.getMonth();
   const holidays = germanHolidays(y);
-
   const first = new Date(y,m,1);
-  const firstDayIndex = (first.getDay()+6)%7;
+  const firstDayIndex = (first.getDay()+6)%7; // Monday = 0
   const lastDate = new Date(y,m+1,0).getDate();
 
   const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -84,7 +82,6 @@ function renderMonth(){
 
 /* --- WEEK VIEW --- */
 function renderWeek(){
-  const y = currentDate.getFullYear();
   const start = new Date(currentDate); start.setDate(currentDate.getDate()-((currentDate.getDay()+6)%7));
   let html = `<div class="week-grid">`;
   html += `<div></div>`;
@@ -180,7 +177,7 @@ function renderEventList(dateStr){
   });
 }
 
-/* ----------- NAVIGATION ----------- */
+/* ---------- NAVIGATION ---------- */
 $("todayBtn").onclick = ()=>{ currentDate=new Date(); render(); };
 document.querySelectorAll(".nav-btn[data-view]").forEach(btn=>{
   btn.onclick = ()=>{
@@ -191,15 +188,21 @@ document.querySelectorAll(".nav-btn[data-view]").forEach(btn=>{
   };
 });
 
-function prev(){ if(currentView==="day") currentDate.setDate(currentDate.getDate()-1);
-else if(currentView==="week") currentDate.setDate(currentDate.getDate()-7);
-else if(currentView==="month") currentDate.setMonth(currentDate.getMonth()-1);
-else if(currentView==="year") currentDate.setFullYear(currentDate.getFullYear()-1); render(); }
+function prev(){ 
+  if(currentView==="day") currentDate.setDate(currentDate.getDate()-1);
+  else if(currentView==="week") currentDate.setDate(currentDate.getDate()-7);
+  else if(currentView==="month") currentDate.setMonth(currentDate.getMonth()-1);
+  else if(currentView==="year") currentDate.setFullYear(currentDate.getFullYear()-1);
+  render(); 
+}
 
-function next(){ if(currentView==="day") currentDate.setDate(currentDate.getDate()+1);
-else if(currentView==="week") currentDate.setDate(currentDate.getDate()+7);
-else if(currentView==="month") currentDate.setMonth(currentDate.getMonth()+1);
-else if(currentView==="year") currentDate.setFullYear(currentDate.getFullYear()+1); render(); }
+function next(){ 
+  if(currentView==="day") currentDate.setDate(currentDate.getDate()+1);
+  else if(currentView==="week") currentDate.setDate(currentDate.getDate()+7);
+  else if(currentView==="month") currentDate.setMonth(currentDate.getMonth()+1);
+  else if(currentView==="year") currentDate.setFullYear(currentDate.getFullYear()+1);
+  render(); 
+}
 
 $("prevBtn").onclick=prev; $("nextBtn").onclick=next;
 
@@ -211,4 +214,5 @@ document.addEventListener("touchend", e=>{
   if(Math.abs(dx)>50){ if(dx<0) next(); else prev(); }
 });
 
+/* Initial render */
 render();
