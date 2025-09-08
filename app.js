@@ -395,38 +395,59 @@ function next(){
 prevBtn.addEventListener('click', prev);
 nextBtn.addEventListener('click', next);
 
-/* Swipe handling */
-let touchStartX = 0, touchStartY=0;
-let touchEndX = 0, touchEndY=0;
+/* Swipe left/right for prev/next and basic mouse drag */
+let touchStartX = 0, touchStartY = 0;
+let touchEndX = 0, touchEndY = 0;
+
 calendarArea.addEventListener('touchstart', e => {
   touchStartX = e.changedTouches[0].screenX;
   touchStartY = e.changedTouches[0].screenY;
 }, {passive:true});
+
 calendarArea.addEventListener('touchend', e => {
   touchEndX = e.changedTouches[0].screenX;
   touchEndY = e.changedTouches[0].screenY;
   handleSwipe();
 }, {passive:true});
 
-let isDown=false, startX=0;
-calendarArea.addEventListener('mousedown', e=>{ isDown=true; startX=e.screenX; }, {passive:true});
-calendarArea.addEventListener('mouseup', e=>{ 
-  if(!isDown) return; 
-  isDown=false; 
-  const diff = e.screenX - startX; 
-  if(Math.abs(diff)>60){ if(diff>0) prev(); else next(); }
+// mouse fallback for desktop
+let isDown = false, startX = 0;
+calendarArea.addEventListener('mousedown', e => {
+  isDown = true;
+  startX = e.screenX;
+}, {passive:true});
+
+calendarArea.addEventListener('mouseup', e => {
+  if (!isDown) return;
+  isDown = false;
+  const diff = e.screenX - startX;
+  if (Math.abs(diff) > 60) {
+    if (diff > 0) prev(); else next();
+  }
 });
 
 function handleSwipe(){
   const dx = touchEndX - touchStartX;
   const dy = touchEndY - touchStartY;
-  if(Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
-  if(dx > 0) prev(); else next();
+  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // ignore vertical swipes
+  if (dx > 0) prev(); else next();
 }
 
-/* Adjust month row height */
+/* Make month grid rows fill the available height between header & footer */
 function adjustRowHeight(){
   const footer = document.querySelector('.footer');
-  const footerRect = footer.getBoundingClientRect();
+  const footerRect = footer ? footer.getBoundingClientRect() : { height: 0 };
   const available = window.innerHeight - footerRect.height;
-  const weekdays = document.querySelector('.weekdays
+
+  const weekdays = document.querySelector('.weekdays');
+  const weekdaysH = weekdays ? weekdays.getBoundingClientRect().height : 0;
+
+  const rows = 6; // maximum weeks
+  const rowHeight = Math.max(60, Math.floor((available - weekdaysH - 8) / rows));
+  document.documentElement.style.setProperty('--row-height', rowHeight + 'px');
+}
+
+/* Initialize */
+window.addEventListener('resize', adjustRowHeight);
+setView('month'); // initial view
+
