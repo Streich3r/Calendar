@@ -59,13 +59,13 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .year-month{background:#242526;border:1px solid #2b2b2b;padding:8px;border-radius:6px} */
 
 
-.year-grid {
+/*.year-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(4, 1fr);
   gap: 6px;
   padding: 6px;
-  height: calc(100vh - 120px); /* adjust for footer */
+  height: calc(100vh - 120px);
   overflow-y: auto;
 }
 .year-month {
@@ -75,7 +75,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
   padding: 6px;
   font-size: 11px;
 }
-.year-month strong { font-size: 13px; }
+.year-month strong { font-size: 13px; } */
 
 /* Darker weekends */
 .day-cell.weekend { background: #252627; }
@@ -101,4 +101,5 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 @media (min-width:700px){
   .month-grid{gap:4px}
 }
+
 
