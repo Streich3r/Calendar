@@ -1,4 +1,4 @@
-/*const CACHE_NAME = "calendar-cache-v1";
+const CACHE_NAME = "calendar-cache-v1";
 const FILES = [
   "./",
   "./index.html",
@@ -16,5 +16,6 @@ self.addEventListener('activate', evt=>{
 });
 self.addEventListener('fetch', evt=>{
   evt.respondWith(caches.match(evt.request).then(r => r || fetch(evt.request)));
-});   */
+});   
+
 
