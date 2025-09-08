@@ -201,45 +201,6 @@ function renderDay(){
   });
 }
 
-// YEAR view: small mini-months  OLD
-
-/*
-function renderYear(){
-  const y = currentDate.getFullYear();
-  let html = `<div class="year-grid">`;
-  for(let m=0;m<12;m++){
-    const monthStart = new Date(y,m,1);
-    const monthName = monthStart.toLocaleString(undefined,{month:'long'});
-    html += `<div class="year-month" data-month="${m}" data-year="${y}">
-               <strong>${monthName}</strong>
-               <div style="font-size:12px;margin-top:6px">${renderMiniMonth(y,m)}</div>
-             </div>`;
-  }
-  html += `</div>`;
-  views.year.innerHTML = html;
-
-  document.querySelectorAll('.year-month').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const yy = parseInt(el.dataset.year,10), mm = parseInt(el.dataset.month,10);
-      currentDate = new Date(yy, mm, 1);
-      setView('month');
-    });
-  });
-}
-function renderMiniMonth(y,m){
-  const first = new Date(y,m,1);
-  const firstIdx = (first.getDay()+6)%7;
-  const lastDate = new Date(y,m+1,0).getDate();
-  let mini = '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
-  for(let i=0;i<firstIdx;i++) mini += `<div></div>`;
-  for(let d=1; d<=lastDate; d++){
-    const ds = `${y}-${m+1}-${d}`;
-    const dot = (events[ds] && events[ds].length>0) ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--event);"></span>' : '';
-    mini += `<div style="padding:2px">${d} ${dot}</div>`;
-  }
-  mini += '</div>';
-  return mini;
-} */
 
 
 /* --- YEAR VIEW --- */
@@ -418,6 +379,7 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
 
 
