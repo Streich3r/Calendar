@@ -247,14 +247,24 @@ function renderYear(){
   const y = currentDate.getFullYear();
   let html = `<div class="year-grid">`;
   for(let m=0;m<12;m++){
-    html += `<div class="year-month"><strong>${new Date(y,m,1).toLocaleString("default",{month:"long"})}</strong>`;
-    html += renderMiniMonth(y,m);
-    html += `</div>`;
+    const monthStart = new Date(y,m,1);
+    const monthName = monthStart.toLocaleString(undefined,{month:'long'});
+    html += `<div class="year-month" data-month="${m}" data-year="${y}">
+               <strong>${monthName}</strong>
+               <div style="font-size:12px;margin-top:6px">${renderMiniMonth(y,m)}</div>
+             </div>`;
   }
   html += `</div>`;
   views.year.innerHTML = html;
-}
 
+  document.querySelectorAll('.year-month').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const yy = parseInt(el.dataset.year,10), mm = parseInt(el.dataset.month,10);
+      currentDate = new Date(yy, mm, 1);
+      setView('month');
+    });
+  });
+}
 function renderMiniMonth(y,m){
   const first = new Date(y,m,1);
   const firstIdx = (first.getDay()+6)%7;
@@ -269,7 +279,6 @@ function renderMiniMonth(y,m){
   }
   mini += '</div>';
   return mini;
-}
 
 /* Modal for adding/viewing events */
 let modalOpenFor = null; // {dateStr, hour?}
@@ -408,4 +417,5 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
