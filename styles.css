@@ -73,9 +73,12 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .year-month strong { font-size: 13px; } 
 
 /* Darker weekends */
+
+/*
 .day-cell.weekend { background: #252627; }
 .hour-cell.weekend { background: #252627; }
 .day-hour.weekend { background: #252627; }
+*/
 
 /* German Holidays */
 
@@ -103,6 +106,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 @media (min-width:700px){
   .month-grid{gap:4px}
 }
+
 
 
 
