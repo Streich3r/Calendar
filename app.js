@@ -279,6 +279,7 @@ function renderMiniMonth(y,m){
   }
   mini += '</div>';
   return mini;
+}
 
 /* Modal for adding/viewing events */
 let modalOpenFor = null; // {dateStr, hour?}
@@ -417,5 +418,6 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
 
