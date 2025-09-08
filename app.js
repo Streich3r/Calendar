@@ -235,15 +235,18 @@ function renderMiniMonth(y,m){
   for(let d=1; d<=lastDate; d++){
     const dt = new Date(y,m,d);
     const dayOfWeek = dt.getDay();
-    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
+   /*start weekend*/
+   const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}"> ... </div>`;
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);  /*end weekend*/
+     
     mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}">${d}</div>`;
   }
   mini += '</div>';
   return mini;
 }
 
-const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
-mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}"> ... </div>`;
+
 
 
 /* Modal for adding/viewing events */
@@ -383,6 +386,7 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
 
 
