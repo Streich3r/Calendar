@@ -72,13 +72,53 @@ function render(){
   adjustRowHeight(); // make month grid fill
 }
 
+
+// german holidays func
+
+function germanHolidays(year) {
+  // Fixed holidays
+  const dates = [
+    [1,1,"Neujahr"],
+    [5,1,"Tag der Arbeit"],
+    [10,3,"Tag der Deutschen Einheit"],
+    [12,25,"1. Weihnachtstag"],
+    [12,26,"2. Weihnachtstag"]
+  ];
+
+  // Easter-based holidays
+  const easter = calcEaster(year);
+  const add = (d,m,label)=> dates.push([m,d,label]);
+
+  add(easter.getDate()+1, easter.getMonth()+1, "Ostermontag");
+  add(easter.getDate()+39, easter.getMonth()+1, "Christi Himmelfahrt");
+  add(easter.getDate()+50, easter.getMonth()+1, "Pfingstmontag");
+  add(easter.getDate()+60, easter.getMonth()+1, "Fronleichnam");
+
+  return dates.map(([m,d,label])=>({date:`${year}-${m}-${d}`,label}));
+}
+
+// Computus algorithm for Easter Sunday
+function calcEaster(y) {
+  const f = Math.floor;
+  const a = y % 19, b = f(y/100), c = y % 100, d = f(b/4), e = b % 4;
+  const g = f((8*b+13)/25), h = (19*a+b-d-g+15)%30;
+  const i = f(c/4), k = c % 4;
+  const l = (32+2*e+2*i-h-k)%7;
+  const m = f((a+11*h+22*l)/451);
+  const month = f((h+l-7*m+114)/31);
+  const day = ((h+l-7*m+114)%31)+1;
+  return new Date(y, month-1, day);
+}
+
+
+
 // MONTH (Monday-first)
 function renderMonth(){
   const y = currentDate.getFullYear(), m = currentDate.getMonth();
   const first = new Date(y,m,1);
-  // compute Monday-first index
   const firstDayIndex = (first.getDay()+6)%7; // Monday=0
   const lastDate = new Date(y,m+1,0).getDate();
+  const holidays = germanHolidays(y);
 
   const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   let html = `<div class="weekdays">${weekdays.map(w=>`<div>${w}</div>`).join('')}</div>`;
@@ -92,13 +132,19 @@ function renderMonth(){
     const isToday = dt.toDateString() === (new Date()).toDateString();
     const ds = `${y}-${m+1}-${d}`;
     const hasEvents = events[ds] && events[ds].length>0;
-    html += `<div class="day-cell" data-date="${ds}">
+    const dayOfWeek = dt.getDay();
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
+    const holiday = holidays.find(h=>h.date===ds);
+
+    html += `<div class="day-cell${isWeekend?' weekend':''}${holiday?' holiday':''}" 
+                    data-date="${ds}" 
+                    ${holiday?`title="${holiday.label}"`:''}>
               <div class="day-number ${isToday? 'today' : ''}">${d}</div>
               <div class="day-events">${ hasEvents ? '<div class="day-dot" title="Has events"></div>' : '' }</div>
             </div>`;
   }
 
-  // fill trailing blanks to complete full weeks (optional)
+  // trailing blanks to fill full weeks
   const totalCells = firstDayIndex + lastDate;
   const rem = (7 - (totalCells % 7)) % 7;
   for(let i=0;i<rem;i++) html += `<div class="day-cell empty"></div>`;
@@ -111,6 +157,7 @@ function renderMonth(){
     cell.addEventListener('click', ()=> openModal(cell.dataset.date));
   });
 }
+
 
 // WEEK view: 24 rows x Mon-Sun
 function renderWeek(){
@@ -228,16 +275,30 @@ function renderYear(){
 }
 function renderMiniMonth(y,m){
   const first = new Date(y,m,1);
-  const firstIdx = (first.getDay()+6)%7;
+  const firstIdx = (first.getDay()+6)%7; // Monday = 0
   const lastDate = new Date(y,m+1,0).getDate();
+  const holidays = germanHolidays(y);
+
   let mini = '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
+  
+  // Empty leading cells
   for(let i=0;i<firstIdx;i++) mini += `<div></div>`;
+
+  // Days
   for(let d=1; d<=lastDate; d++){
     const dt = new Date(y,m,d);
     const dayOfWeek = dt.getDay();
     const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
-    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}">${d}</div>`;
+    const ds = `${y}-${m+1}-${d}`;
+    const holiday = holidays.find(h=>h.date===ds);
+
+    mini += `<div style="padding:1px;
+                          ${isWeekend?'background:#252627;':''}
+                          ${holiday?'color:#e84545;font-weight:bold;':''}">
+                ${d}
+             </div>`;
   }
+
   mini += '</div>';
   return mini;
 }
@@ -382,6 +443,7 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
 
 
