@@ -226,31 +226,25 @@ function renderYear(){
     });
   });
 }
-function renderMiniMonth(y, m) {
-  const first = new Date(y, m, 1);
-  const firstIdx = (first.getDay() + 6) % 7;
-  const lastDate = new Date(y, m + 1, 0).getDate();
-
-  let mini = `<div class="mini-month">`;
-
-  // Empty slots before the first day
-  for (let i = 0; i < firstIdx; i++) {
-    mini += `<div></div>`;
-  }
-
-  // Days
-  for (let d = 1; d <= lastDate; d++) {
+function renderMiniMonth(y,m){
+  const holidays = germanHolidays(y);
+  const first = new Date(y,m,1);
+  const firstIdx = (first.getDay()+6)%7;
+  const lastDate = new Date(y,m+1,0).getDate();
+  let mini = '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
+  for(let i=0;i<firstIdx;i++) mini += `<div></div>`;
+  for(let d=1; d<=lastDate; d++){
+    const dt = new Date(y,m,d);
+    const dayOfWeek = dt.getDay();
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
     const ds = `${y}-${m+1}-${d}`;
-    const dateObj = new Date(y, m, d);
-    const isWeekend = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
-    const dot = (events[ds] && events[ds].length > 0)
-      ? `<span class="event-dot"></span>`
-      : '';
-
-    mini += `<div class="mini-month-day${isWeekend ? ' weekend' : ''}">${d}${dot}</div>`;
+    const isHoliday = holidays[ds] !== undefined;
+    const dot = (events[ds] && events[ds].length>0) ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--event);"></span>' : '';
+    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}">
+               <span style="${isHoliday?'color:#d93025;font-weight:bold;':''}">${d}</span> ${dot}
+             </div>`;
   }
-
-  mini += `</div>`;
+  mini += '</div>';
   return mini;
 }
 
@@ -394,6 +388,7 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
 
 
