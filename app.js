@@ -201,7 +201,9 @@ function renderDay(){
   });
 }
 
-// YEAR view: small mini-months
+// YEAR view: small mini-months  OLD
+
+/*
 function renderYear(){
   const y = currentDate.getFullYear();
   let html = `<div class="year-grid">`;
@@ -234,6 +236,36 @@ function renderMiniMonth(y,m){
     const ds = `${y}-${m+1}-${d}`;
     const dot = (events[ds] && events[ds].length>0) ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--event);"></span>' : '';
     mini += `<div style="padding:2px">${d} ${dot}</div>`;
+  }
+  mini += '</div>';
+  return mini;
+} */
+
+
+/* --- YEAR VIEW --- */
+function renderYear(){
+  const y = currentDate.getFullYear();
+  let html = `<div class="year-grid">`;
+  for(let m=0;m<12;m++){
+    html += `<div class="year-month"><strong>${new Date(y,m,1).toLocaleString("default",{month:"long"})}</strong>`;
+    html += renderMiniMonth(y,m);
+    html += `</div>`;
+  }
+  html += `</div>`;
+  views.year.innerHTML = html;
+}
+
+function renderMiniMonth(y,m){
+  const first = new Date(y,m,1);
+  const firstIdx = (first.getDay()+6)%7;
+  const lastDate = new Date(y,m+1,0).getDate();
+  let mini = '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
+  for(let i=0;i<firstIdx;i++) mini += `<div></div>`;
+  for(let d=1; d<=lastDate; d++){
+    const dt = new Date(y,m,d);
+    const dayOfWeek = dt.getDay();
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
+    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}">${d}</div>`;
   }
   mini += '</div>';
   return mini;
@@ -376,3 +408,4 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
