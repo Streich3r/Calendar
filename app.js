@@ -132,8 +132,8 @@ function renderMonth(){
     const ds = `${y}-${m+1}-${d}`;
     const hasEvents = events[ds] && events[ds].length>0;
      /* Darker Weekends */ 
-   // const dayOfWeek = dt.getDay();              
-   // const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
+    const dayOfWeek = dt.getDay();              
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
     const holiday = holidays.find(h=>h.date===ds);
 
     html += `<div class="day-cell${isWeekend?' weekend':''}${holiday?' holiday':''}" 
@@ -451,5 +451,6 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view
+
 
 
