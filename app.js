@@ -6,17 +6,6 @@ let events = JSON.parse(localStorage.getItem("events")||"{}");
 
 function saveEvents(){ localStorage.setItem("events", JSON.stringify(events)); }
 
-/* German fixed-date holidays */
-function germanHolidays(year){
-  return {
-    [`${year}-1-1`]: "Neujahr",
-    [`${year}-5-1`]: "Tag der Arbeit",
-    [`${year}-10-3`]: "Tag der Deutschen Einheit",
-    [`${year}-12-25`]: "1. Weihnachtstag",
-    [`${year}-12-26`]: "2. Weihnachtstag"
-  };
-}
-
 /* ---------- RENDERING ---------- */
 function render(){
   $("title").textContent = titleText();
@@ -42,14 +31,13 @@ function titleText(){
 /* --- MONTH VIEW --- */
 function renderMonth(){
   const y = currentDate.getFullYear(), m = currentDate.getMonth();
-  const holidays = germanHolidays(y);
   const first = new Date(y,m,1);
   const firstDayIndex = (first.getDay()+6)%7;
   const lastDate = new Date(y,m+1,0).getDate();
 
   const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   let html = `<div class="weekdays">${weekdays.map(w=>`<div>${w}</div>`).join('')}</div>`;
-  html += `<div class="month-grid" id="monthGrid">`;
+  html += `<div class="month-grid">`;
 
   for(let i=0;i<firstDayIndex;i++) html += `<div class="day-cell empty"></div>`;
 
@@ -59,11 +47,10 @@ function renderMonth(){
     const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
     const isToday = dt.toDateString() === (new Date()).toDateString();
     const ds = `${y}-${m+1}-${d}`;
-    const isHoliday = holidays[ds] !== undefined;
     const hasEvents = events[ds] && events[ds].length>0;
 
-    html += `<div class="day-cell${isWeekend?' weekend':''}" data-date="${ds}" title="${isHoliday?holidays[ds]:''}">
-              <div class="day-number ${isToday? 'today' : ''} ${isHoliday? 'holiday' : ''}">${d}</div>
+    html += `<div class="day-cell${isWeekend?' weekend':''}" data-date="${ds}">
+              <div class="day-number ${isToday? 'today' : ''}">${d}</div>
               <div class="day-events">${ hasEvents ? '<div class="day-dot"></div>' : '' }</div>
             </div>`;
   }
@@ -85,7 +72,7 @@ function renderWeek(){
   const start = new Date(currentDate); start.setDate(currentDate.getDate()-((currentDate.getDay()+6)%7));
   let html = `<div class="week-grid">`;
   html += `<div></div>`;
-  for(let i=0;i<7;i++){ const d = new Date(start); d.setDate(start.getDate()+i); html+=`<div>${d.toLocaleDateString("de-DE",{weekday:"short",day:"numeric"})}</div>`; }
+  for(let i=0;i<7;i++){ const d = new Date(start); d.setDate(start.getDate()+i); html+=`<div>${d.toLocaleDateString("default",{weekday:"short",day:"numeric"})}</div>`; }
   for(let h=0; h<24; h++){
     html += `<div class="hour-label">${h}:00</div>`;
     for(let i=0;i<7;i++){
@@ -127,7 +114,6 @@ function renderYear(){
 }
 
 function renderMiniMonth(y,m){
-  const holidays = germanHolidays(y);
   const first = new Date(y,m,1);
   const firstIdx = (first.getDay()+6)%7;
   const lastDate = new Date(y,m+1,0).getDate();
@@ -137,12 +123,7 @@ function renderMiniMonth(y,m){
     const dt = new Date(y,m,d);
     const dayOfWeek = dt.getDay();
     const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
-    const ds = `${y}-${m+1}-${d}`;
-    const isHoliday = holidays[ds] !== undefined;
-    const dot = (events[ds] && events[ds].length>0) ? '<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--event);"></span>' : '';
-    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}">
-               <span style="${isHoliday?'color:#d93025;font-weight:bold;':''}">${d}</span> ${dot}
-             </div>`;
+    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}">${d}</div>`;
   }
   mini += '</div>';
   return mini;
