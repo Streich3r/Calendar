@@ -54,11 +54,6 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .day-column{display:grid;grid-template-columns:1fr;border-left:1px solid #2b2b2b}
 .day-hour{height:56px;border:1px solid var(--cell-border);position:relative;padding:6px}
 
-/* Year view  old
-.year-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:6px}
-.year-month{background:#242526;border:1px solid #2b2b2b;padding:8px;border-radius:6px} */
-
-
  .year-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -82,6 +77,13 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .hour-cell.weekend { background: #252627; }
 .day-hour.weekend { background: #252627; }
 
+/* German Holidays */
+
+.day-cell.holiday .day-number { 
+  background: #e84545; 
+  color: #fff; 
+}
+
 
 /* Modal */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)}
@@ -101,6 +103,7 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 @media (min-width:700px){
   .month-grid{gap:4px}
 }
+
 
 
 
