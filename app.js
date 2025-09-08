@@ -242,6 +242,10 @@ function renderMiniMonth(y,m){
   return mini;
 }
 
+const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}"> ... </div>`;
+
+
 /* Modal for adding/viewing events */
 let modalOpenFor = null; // {dateStr, hour?}
 
@@ -379,6 +383,7 @@ function adjustRowHeight(){
 /* Initialize */
 window.addEventListener('resize', adjustRowHeight);
 setView('month'); // initial view uses setView which calls render
+
 
 
 
