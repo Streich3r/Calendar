@@ -72,9 +72,7 @@ function render(){
   adjustRowHeight(); // make month grid fill
 }
 
-
 // german holidays func
-
 function germanHolidays(year) {
   // Fixed holidays
   const dates = [
@@ -87,12 +85,15 @@ function germanHolidays(year) {
 
   // Easter-based holidays
   const easter = calcEaster(year);
-  const add = (d,m,label)=> dates.push([m,d,label]);
-
-  add(easter.getDate()+1, easter.getMonth()+1, "Ostermontag");
-  add(easter.getDate()+39, easter.getMonth()+1, "Christi Himmelfahrt");
-  add(easter.getDate()+50, easter.getMonth()+1, "Pfingstmontag");
-  add(easter.getDate()+60, easter.getMonth()+1, "Fronleichnam");
+  const add = (offset,label)=>{
+    const d = new Date(easter);
+    d.setDate(d.getDate()+offset);
+    dates.push([d.getMonth()+1, d.getDate(), label]);
+  };
+  add(1,"Ostermontag");
+  add(39,"Christi Himmelfahrt");
+  add(50,"Pfingstmontag");
+  add(60,"Fronleichnam");
 
   return dates.map(([m,d,label])=>({date:`${year}-${m}-${d}`,label}));
 }
@@ -109,8 +110,6 @@ function calcEaster(y) {
   const day = ((h+l-7*m+114)%31)+1;
   return new Date(y, month-1, day);
 }
-
-
 
 // MONTH (Monday-first)
 function renderMonth(){
@@ -158,14 +157,11 @@ function renderMonth(){
   });
 }
 
-
-// WEEK view: 24 rows x Mon-Sun
+// WEEK view
 function renderWeek(){
-  // compute start-of-week (Monday)
   const start = new Date(currentDate);
   const dayIndex = (start.getDay()+6)%7; // Monday=0
   start.setDate(start.getDate() - dayIndex);
-  // header row
   let html = `<div class="week-grid"><div></div>`;
   const days = [];
   for(let i=0;i<7;i++){
@@ -174,7 +170,6 @@ function renderWeek(){
     days.push(d);
     html += `<div style="text-align:center;border-bottom:1px solid #2b2b2b;padding:6px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}<br>${d.getDate()}</div>`;
   }
-  // hours
   for(let h=0; h<24; h++){
     html += `<div class="hour-label">${pad(h)}:00</div>`;
     for(let i=0;i<7;i++){
@@ -186,7 +181,6 @@ function renderWeek(){
   html += `</div>`;
   views.week.innerHTML = html;
 
-  // place events
   for(const ds in events){
     (events[ds]||[]).forEach(ev=>{
       if(ev.hour!==undefined){
@@ -202,13 +196,12 @@ function renderWeek(){
     });
   }
 
-  // handlers to open modal (hour cells)
   document.querySelectorAll('.hour-cell').forEach(cell=>{
     cell.addEventListener('click', ()=> openModal(cell.dataset.date, parseInt(cell.dataset.hour,10)));
   });
 }
 
-// DAY view: single column with 24 hourly rows
+// DAY view
 function renderDay(){
   const y = currentDate.getFullYear(), m = currentDate.getMonth(), d = currentDate.getDate();
   const ds = `${y}-${m+1}-${d}`;
@@ -220,7 +213,6 @@ function renderDay(){
   html += `</div>`;
   views.day.innerHTML = html;
 
-  // populate events for this date
   (events[ds]||[]).forEach(ev=>{
     if(ev.hour!==undefined){
       const cell = document.querySelector(`.day-hour[data-date="${ds}"][data-hour="${ev.hour}"]`);
@@ -231,7 +223,6 @@ function renderDay(){
         cell.appendChild(el);
       }
     } else {
-      // full-day event - show at top
       const cell = document.querySelector(`.day-hour[data-date="${ds}"][data-hour="0"]`);
       if(cell){
         const el = document.createElement('div');
@@ -242,15 +233,12 @@ function renderDay(){
     }
   });
 
-  // click handlers to add event
   document.querySelectorAll('.day-hour').forEach(cell=>{
     cell.addEventListener('click', ()=> openModal(cell.dataset.date, parseInt(cell.dataset.hour,10)));
   });
 }
 
-
-
-/* --- YEAR VIEW --- */
+// YEAR view
 function renderYear(){
   const y = currentDate.getFullYear();
   let html = `<div class="year-grid">`;
@@ -273,18 +261,15 @@ function renderYear(){
     });
   });
 }
+
 function renderMiniMonth(y,m){
   const first = new Date(y,m,1);
-  const firstIdx = (first.getDay()+6)%7; // Monday = 0
+  const firstIdx = (first.getDay()+6)%7;
   const lastDate = new Date(y,m+1,0).getDate();
   const holidays = germanHolidays(y);
 
   let mini = '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
-  
-  // Empty leading cells
   for(let i=0;i<firstIdx;i++) mini += `<div></div>`;
-
-  // Days
   for(let d=1; d<=lastDate; d++){
     const dt = new Date(y,m,d);
     const dayOfWeek = dt.getDay();
@@ -292,22 +277,17 @@ function renderMiniMonth(y,m){
     const ds = `${y}-${m+1}-${d}`;
     const holiday = holidays.find(h=>h.date===ds);
 
-    mini += `<div style="padding:1px;
-                          ${isWeekend?'background:#252627;':''}
-                          ${holiday?'color:#e84545;font-weight:bold;':''}">
+    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}${holiday?'color:#e84545;font-weight:bold;':''}" 
+                  ${holiday?`title="${holiday.label}"`:''}>
                 ${d}
              </div>`;
   }
-
   mini += '</div>';
   return mini;
 }
 
-
-
-
-/* Modal for adding/viewing events */
-let modalOpenFor = null; // {dateStr, hour?}
+/* Modal */
+let modalOpenFor = null;
 
 function openModal(dateStr, hour){
   modalOpenFor = {date: dateStr, hour: hour};
@@ -315,9 +295,8 @@ function openModal(dateStr, hour){
   modal.setAttribute('aria-hidden','false');
   modalDate.textContent = new Date(dateStr).toDateString() + (hour!==undefined?` ${pad(hour)}:00`:'');
   eventInput.value = '';
-  eventList.innerHTML = '';
+  renderEventList(dateStr);
 
-  // populate hours dropdown
   eventHourSelect.innerHTML = '';
   for(let h=0; h<24; h++){
     const opt = document.createElement('option');
@@ -333,11 +312,24 @@ function openModal(dateStr, hour){
     eventHourCheckbox.checked = false;
     eventHourSelect.disabled = true;
   }
+}
+
+function renderEventList(dateStr){
+  eventList.innerHTML = "";
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const holiday = germanHolidays(y).find(h=>h.date===dateStr);
+
+  if(holiday){
+    const li = document.createElement("li");
+    li.textContent = "📅 " + holiday.label;
+    li.style.color = "#e84545";
+    li.style.fontWeight = "bold";
+    eventList.appendChild(li);
+  }
 
   (events[dateStr]||[]).forEach((e, idx)=>{
     const li = document.createElement('li');
     li.textContent = e.hour!==undefined ? `${pad(e.hour)}:00 — ${e.text}` : e.text;
-    // delete button
     const del = document.createElement('button');
     del.textContent = 'Delete';
     del.style.cssText = 'float:right;background:#900;color:#fff;border:none;padding:4px 6px;border-radius:4px';
@@ -345,7 +337,7 @@ function openModal(dateStr, hour){
       events[dateStr].splice(idx,1);
       if(events[dateStr].length===0) delete events[dateStr];
       localStorage.setItem('events', JSON.stringify(events));
-      openModal(dateStr,hour); // refresh modal
+      renderEventList(dateStr);
       render();
     });
     li.appendChild(del);
@@ -366,16 +358,19 @@ addEventBtn.addEventListener('click', ()=>{
   modal.setAttribute('aria-hidden','true');
   render();
 });
-closeModalBtn.addEventListener('click', ()=>{ modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); });
+
+closeModalBtn.addEventListener('click', ()=>{
+  modal.classList.add('hidden'); 
+  modal.setAttribute('aria-hidden','true'); 
+});
 
 eventHourCheckbox.addEventListener('change', ()=>{
   eventHourSelect.disabled = !eventHourCheckbox.checked;
 });
 
-/* Navigation controls */
+/* Navigation */
 navBtns.forEach(b=> b.addEventListener('click', ()=>{
-  const view = b.dataset.view;
-  setView(view);
+  setView(b.dataset.view);
 }));
 
 todayBtn.addEventListener('click', ()=>{
@@ -400,7 +395,7 @@ function next(){
 prevBtn.addEventListener('click', prev);
 nextBtn.addEventListener('click', next);
 
-/* Swipe left/right for prev/next and basic mouse drag */
+/* Swipe handling */
 let touchStartX = 0, touchStartY=0;
 let touchEndX = 0, touchEndY=0;
 calendarArea.addEventListener('touchstart', e => {
@@ -413,45 +408,25 @@ calendarArea.addEventListener('touchend', e => {
   handleSwipe();
 }, {passive:true});
 
-// mouse fallback for desktop
 let isDown=false, startX=0;
 calendarArea.addEventListener('mousedown', e=>{ isDown=true; startX=e.screenX; }, {passive:true});
-calendarArea.addEventListener('mouseup', e=>{ if(!isDown) return; isDown=false; const diff = e.screenX - startX; if(Math.abs(diff)>60){ if(diff>0) prev(); else next(); }});
+calendarArea.addEventListener('mouseup', e=>{ 
+  if(!isDown) return; 
+  isDown=false; 
+  const diff = e.screenX - startX; 
+  if(Math.abs(diff)>60){ if(diff>0) prev(); else next(); }
+});
 
 function handleSwipe(){
   const dx = touchEndX - touchStartX;
   const dy = touchEndY - touchStartY;
-  if(Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // ignore vertical swipes
+  if(Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
   if(dx > 0) prev(); else next();
 }
 
-/* Make month grid rows fill the available height between header & footer */
+/* Adjust month row height */
 function adjustRowHeight(){
-  // find footer height
   const footer = document.querySelector('.footer');
   const footerRect = footer.getBoundingClientRect();
   const available = window.innerHeight - footerRect.height;
-  // subtract weekdays header height if present
-  const weekdays = document.querySelector('.weekdays');
-  const weekdaysH = weekdays ? weekdays.getBoundingClientRect().height : 0;
-  // determine rows (max 6 weeks visible)
-  const rows = 6;
-  const rowHeight = Math.max(60, Math.floor((available - weekdaysH - 8) / rows));
-  document.documentElement.style.setProperty('--row-height', rowHeight + 'px');
-}
-
-/* Initialize */
-window.addEventListener('resize', adjustRowHeight);
-setView('month'); // initial view uses setView which calls render
-
-
-
-
-
-
-
-
-
-
-
-
+  const weekdays = document.querySelector('.weekdays
