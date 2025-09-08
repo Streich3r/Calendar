@@ -44,7 +44,7 @@ function renderMonth(){
   const y = currentDate.getFullYear(), m = currentDate.getMonth();
   const holidays = germanHolidays(y);
   const first = new Date(y,m,1);
-  const firstDayIndex = (first.getDay()+6)%7; // Monday = 0
+  const firstDayIndex = (first.getDay()+6)%7;
   const lastDate = new Date(y,m+1,0).getDate();
 
   const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -204,7 +204,8 @@ function next(){
   render(); 
 }
 
-$("prevBtn").onclick=prev; $("nextBtn").onclick=next;
+$("prevBtn").onclick=prev;
+$("nextBtn").onclick=next;
 
 /* Swipe support */
 let touchStartX=0;
@@ -214,5 +215,4 @@ document.addEventListener("touchend", e=>{
   if(Math.abs(dx)>50){ if(dx<0) next(); else prev(); }
 });
 
-/* Initial render */
 render();
