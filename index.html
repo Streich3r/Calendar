@@ -4,14 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Calendar</title>
+  <!-- Theme-Farbe für Browser-UI -->
   <meta name="theme-color" content="#0b0d12">
-  <link rel="stylesheet" href="styles.css?v=5">
+
+  <link rel="stylesheet" href="styles.css?v=3">
+
+  <!-- Manifest für PWA -->
   <link rel="manifest" href="manifest.json">
+
+  <!-- Favicons -->
   <link rel="icon" type="image/png" href="icon-512.png">
   <link rel="apple-touch-icon" href="icon-512.png">
+
+  <!-- Windows Tile Icons -->
   <meta name="msapplication-TileImage" content="icon-512.png">
   <meta name="msapplication-TileColor" content="#0b0d12">
 </head>
+  
 <body>
   <div id="app" class="app">
     <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
@@ -41,23 +50,32 @@
     </footer>
   </div>
 
+  <!-- Event Modal -->
   <div id="eventModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
       <h2 id="modalDate">Date</h2>
+
       <ul id="eventList" class="event-list" aria-live="polite"></ul>
+
       <label for="eventInput" class="sr-only">Event text</label>
       <input id="eventInput" type="text" placeholder="Event title (required)" />
+
       <div class="modal-row">
         <label>
           <input id="eventHourCheckbox" type="checkbox" /> At hour
         </label>
-        <select id="eventHour" aria-label="Select hour" disabled></select>
+        <select id="eventHour" aria-label="Select hour" disabled>
+          <!-- hours inserted by JS -->
+        </select>
       </div>
+
+      <!-- NEUE CHECKBOX für jährliche Geburtstage -->
       <div class="modal-row">
         <label>
-          <input id="eventRepeatYearly" type="checkbox" /> Birthday (repeats yearly)
+          <input id="eventRepeatYearly" type="checkbox" /> 🎂 Repeat yearly
         </label>
       </div>
+
       <div class="modal-actions">
         <button id="addEventBtn" class="btn">Add</button>
         <button id="closeModalBtn" class="btn alt">Close</button>
@@ -65,10 +83,10 @@
     </div>
   </div>
 
-  <script src="app.js?v=6" defer></script>
+  <script src="app.js?v=4" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(()=>{/*sw fail ok*/});
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
     }
   </script>
 </body>
