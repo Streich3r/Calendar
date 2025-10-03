@@ -6,10 +6,10 @@
   --text:#e8eaed;
   --cell-border:#2c2c2c;
   --event:#8ab4f8;
+  --birthday:#3fcf8e;
   --footer-height:112px;
 }
 
-/* Reset & layout */
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 .app{height:100%;display:flex;flex-direction:column;}
 .main{flex:1;display:block;overflow:auto;background:linear-gradient(#202124,#151617)}
@@ -29,19 +29,18 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .day-cell{background:transparent;border:1px solid var(--cell-border);padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;cursor:pointer;overflow:hidden}
 .day-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;margin-top:4px;font-weight:500}
 .day-number.today{background:var(--accent);color:white}
-.day-events{display:flex;justify-content:center;align-items:center;gap:2px;margin-top:6px;flex-wrap:wrap}
+.day-cell.holiday .day-number{background:#e84545;color:#fff}
+.day-events{margin-top:6px;display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap}
 .day-dot{width:6px;height:6px;border-radius:50%;background:var(--event)}
-.day-dot.holiday{background:#e84545}
-.day-dot.birthday{background:#3fcf8e}
+.day-dot.birthday{background:var(--birthday)}
 .week-grid{display:grid;grid-template-columns:60px repeat(7,1fr);align-items:start;border-top:1px solid #2b2b2b}
 .hour-label{padding:6px 8px;font-size:11px;color:var(--muted);border-right:1px solid #2b2b2b}
 .hour-cell{height:56px;border:1px solid var(--cell-border);position:relative;padding:2px;overflow:hidden}
-.day-hour{height:56px;border:1px solid var(--cell-border);position:relative;padding:6px}
 .event{position:absolute;left:4px;right:4px;background:var(--accent);color:#fff;padding:4px 6px;border-radius:6px;font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.year-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:6px;height:calc(100vh - 120px);overflow-y:auto}
+.day-hour{height:56px;border:1px solid var(--cell-border);position:relative;padding:6px}
+.year-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:6px;height:calc(100vh-120px);overflow-y:auto}
 .year-month{background:#242526;border:1px solid #2b2b2b;border-radius:6px;padding:6px;font-size:11px}
 .year-month strong{font-size:13px}
-.day-cell.holiday .day-number{background:#e84545;color:#fff}
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)}
 .modal.hidden{display:none}
 .modal-content{background:var(--panel);padding:14px;border-radius:10px;width:92%;max-width:420px}
