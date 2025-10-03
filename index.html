@@ -1,80 +1,63 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Calendar</title>
-  <meta name="theme-color" content="#0b0d12">
-  <link rel="stylesheet" href="styles.css?v=5">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon-512.png">
-  <link rel="apple-touch-icon" href="icon-512.png">
-  <meta name="msapplication-TileImage" content="icon-512.png">
-  <meta name="msapplication-TileColor" content="#0b0d12">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Calendar</title>
+<meta name="theme-color" content="#0b0d12">
+<link rel="stylesheet" href="styles.css?v=5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="msapplication-TileImage" content="icon-512.png">
+<meta name="msapplication-TileColor" content="#0b0d12">
 </head>
 <body>
 <div id="app" class="app">
-  <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
-    <section id="dayView" class="view" aria-hidden="true"></section>
-    <section id="weekView" class="view" aria-hidden="true"></section>
-    <section id="monthView" class="view" aria-hidden="true"></section>
-    <section id="yearView" class="view" aria-hidden="true"></section>
-  </main>
-
-  <footer class="footer" role="contentinfo">
-    <div class="switchbar">
-      <button id="prevBtn" class="icon-btn" aria-label="Previous">‹</button>
-      <div class="title-wrap">
-        <div id="title" class="title">Month Year</div>
-        <div id="subtitle" class="subtitle"></div>
-      </div>
-      <button id="nextBtn" class="icon-btn" aria-label="Next">›</button>
-    </div>
-
-    <nav class="bottom-nav" role="navigation" aria-label="Views">
-      <button class="nav-btn" data-view="day" aria-pressed="false">Day</button>
-      <button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
-      <button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
-      <button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
-      <button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
-    </nav>
-  </footer>
+<main id="calendarArea" class="main" role="main" aria-label="Calendar area">
+<section id="dayView" class="view" aria-hidden="true"></section>
+<section id="weekView" class="view" aria-hidden="true"></section>
+<section id="monthView" class="view" aria-hidden="true"></section>
+<section id="yearView" class="view" aria-hidden="true"></section>
+</main>
+<footer class="footer" role="contentinfo">
+<div class="switchbar">
+<button id="prevBtn" class="icon-btn" aria-label="Previous">‹</button>
+<div class="title-wrap">
+<div id="title" class="title">Month Year</div>
+<div id="subtitle" class="subtitle"></div>
 </div>
-
-<!-- Event Modal -->
+<button id="nextBtn" class="icon-btn" aria-label="Next">›</button>
+</div>
+<nav class="bottom-nav" role="navigation" aria-label="Views">
+<button class="nav-btn" data-view="day" aria-pressed="false">Day</button>
+<button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
+<button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
+<button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
+<button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
+</nav>
+</footer>
+</div>
 <div id="eventModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="modal-content">
-    <h2 id="modalDate">Date</h2>
-    <ul id="eventList" class="event-list" aria-live="polite"></ul>
-
-    <label for="eventInput" class="sr-only">Event text</label>
-    <input id="eventInput" type="text" placeholder="Event title (required)" />
-
-    <div class="modal-row">
-      <label>
-        <input id="eventHourCheckbox" type="checkbox" /> At hour
-      </label>
-      <select id="eventHour" aria-label="Select hour" disabled></select>
-    </div>
-
-    <div class="modal-row">
-      <label>
-        <input id="eventRepeatYearly" type="checkbox" /> Birthday / yearly
-      </label>
-    </div>
-
-    <div class="modal-actions">
-      <button id="addEventBtn" class="btn">Add</button>
-      <button id="closeModalBtn" class="btn alt">Close</button>
-    </div>
-  </div>
+<div class="modal-content">
+<h2 id="modalDate">Date</h2>
+<ul id="eventList" class="event-list" aria-live="polite"></ul>
+<label for="eventInput" class="sr-only">Event text</label>
+<input id="eventInput" type="text" placeholder="Event title (required)" />
+<div class="modal-row">
+<label><input id="eventHourCheckbox" type="checkbox" /> At hour</label>
+<select id="eventHour" aria-label="Select hour" disabled></select>
+<label><input id="eventRepeatYearly" type="checkbox" /> Birthday (repeat yearly)</label>
 </div>
-
+<div class="modal-actions">
+<button id="addEventBtn" class="btn">Add</button>
+<button id="closeModalBtn" class="btn alt">Close</button>
+</div>
+</div>
+</div>
 <script src="app.js?v=5" defer></script>
 <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  }
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('service-worker.js').catch(()=>{});
 </script>
 </body>
 </html>
