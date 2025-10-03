@@ -4,19 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Calendar</title>
-  <!-- Theme-Farbe für Browser-UI -->
   <meta name="theme-color" content="#0b0d12">
 
   <link rel="stylesheet" href="styles.css?v=3">
-
-  <!-- Manifest für PWA -->
   <link rel="manifest" href="manifest.json">
-
-  <!-- Favicons -->
   <link rel="icon" type="image/png" href="icon-512.png">
   <link rel="apple-touch-icon" href="icon-512.png">
-
-  <!-- Windows Tile Icons -->
   <meta name="msapplication-TileImage" content="icon-512.png">
   <meta name="msapplication-TileColor" content="#0b0d12">
 </head>
@@ -64,9 +57,14 @@
         <label>
           <input id="eventHourCheckbox" type="checkbox" /> At hour
         </label>
-        <select id="eventHour" aria-label="Select hour" disabled>
-          <!-- hours inserted by JS -->
-        </select>
+        <select id="eventHour" aria-label="Select hour" disabled></select>
+      </div>
+
+      <!-- NEU: Geburtstag jährlich wiederholen -->
+      <div class="modal-row">
+        <label>
+          <input id="eventRepeatYearly" type="checkbox" /> Yearly (Birthday)
+        </label>
       </div>
 
       <div class="modal-actions">
@@ -76,7 +74,7 @@
     </div>
   </div>
 
-  <script src="app.js?v=4" defer></script>
+  <script src="app.js?v=5" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
@@ -84,6 +82,3 @@
   </script>
 </body>
 </html>
-
-
-
