@@ -1,340 +1,456 @@
-// ===============================
-// Simple Calendar with Events
-// ===============================
+/* app.js - Calendar PWA
+   - Multi-view: day/week/month/year
+   - Monday-first, today circle, events (localStorage)
+   - Swipe left/right for prev/next depending on view
+   - JS computes month row heights so grid fills screen
+*/
 
-const views = {
-  day: document.getElementById("dayView"),
-  week: document.getElementById("weekView"),
-  month: document.getElementById("monthView"),
-  year: document.getElementById("yearView"),
-};
+const $ = id => document.getElementById(id);
 
-const titleEl = document.getElementById("title");
-const subtitleEl = document.getElementById("subtitle");
-
+// State
 let currentDate = new Date();
-let currentView = "month";
-let events = loadEvents(); // aus localStorage
+let currentView = 'month'; // day, week, month, year
+let events = JSON.parse(localStorage.getItem('events') || '{}'); // { "YYYY-M-D": [{text,hour?}, ...] }
 
-// Modal Elements
-const modal = document.getElementById("eventModal");
-const modalDateEl = document.getElementById("modalDate");
-const eventListEl = document.getElementById("eventList");
-const eventInput = document.getElementById("eventInput");
-const eventHourCheckbox = document.getElementById("eventHourCheckbox");
-const eventHourSelect = document.getElementById("eventHour");
-const repeatCheckbox = document.getElementById("eventRepeatYearly"); // NEU
-const addEventBtn = document.getElementById("addEventBtn");
-const closeModalBtn = document.getElementById("closeModalBtn");
+// Elements
+const views = {
+  day: $('dayView'),
+  week: $('weekView'),
+  month: $('monthView'),
+  year: $('yearView')
+};
+const calendarArea = $('calendarArea');
+const titleEl = $('title');
+const subtitleEl = $('subtitle');
+const prevBtn = $('prevBtn');
+const nextBtn = $('nextBtn');
+const todayBtn = $('todayBtn');
+const navBtns = Array.from(document.querySelectorAll('.nav-btn'));
+const modal = $('eventModal');
+const modalDate = $('modalDate');
+const eventList = $('eventList');
+const eventInput = $('eventInput');
+const addEventBtn = $('addEventBtn');
+const closeModalBtn = $('closeModalBtn');
+const eventHourCheckbox = $('eventHourCheckbox');
+const eventHourSelect = $('eventHour');
 
-let selectedDate = null;
-
-// ========== INIT ==========
-function init() {
-  // Buttons
-  document.querySelectorAll(".nav-btn").forEach((btn) =>
-    btn.addEventListener("click", () => setView(btn.dataset.view))
-  );
-
-  document.getElementById("prevBtn").onclick = () => changeDate(-1);
-  document.getElementById("nextBtn").onclick = () => changeDate(1);
-  document.getElementById("todayBtn").onclick = goToday;
-
-  addEventBtn.onclick = addEvent;
-  closeModalBtn.onclick = closeModal;
-  eventHourCheckbox.onchange = () =>
-    (eventHourSelect.disabled = !eventHourCheckbox.checked);
-
-  // Stunden in Dropdown füllen
-  for (let h = 0; h < 24; h++) {
-    const opt = document.createElement("option");
-    opt.value = h;
-    opt.textContent = h + ":00";
-    eventHourSelect.appendChild(opt);
-  }
-
-  render();
+// utilities
+const pad = n => (n<10?'0':'')+n;
+function ymd(dt){ return `${dt.getFullYear()}-${dt.getMonth()+1}-${dt.getDate()}`; }
+function formatTitle(d){
+  return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+}
+function formatSubtitle(d){
+  return d.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short' });
 }
 
-function setView(view) {
-  currentView = view;
-  document.querySelectorAll(".nav-btn").forEach((btn) =>
-    btn.classList.toggle("active", btn.dataset.view === view)
-  );
-  render();
-}
-
-function changeDate(step) {
-  if (currentView === "month") currentDate.setMonth(currentDate.getMonth() + step);
-  if (currentView === "year") currentDate.setFullYear(currentDate.getFullYear() + step);
-  if (currentView === "week") currentDate.setDate(currentDate.getDate() + step * 7);
-  if (currentView === "day") currentDate.setDate(currentDate.getDate() + step);
-  render();
-}
-
-function goToday() {
-  currentDate = new Date();
-  render();
-}
-
-// ========== RENDER ==========
-function render() {
-  Object.values(views).forEach((v) => (v.innerHTML = ""));
-  Object.values(views).forEach((v) => v.classList.remove("active"));
-  Object.keys(views).forEach((key) =>
-    views[key].setAttribute("aria-hidden", true)
-  );
-
-  if (currentView === "day") renderDay();
-  if (currentView === "week") renderWeek();
-  if (currentView === "month") renderMonth();
-  if (currentView === "year") renderYear();
-}
-
-// ---------- Day View ----------
-function renderDay() {
-  const view = views.day;
-  view.classList.add("active");
-  view.setAttribute("aria-hidden", false);
-
-  titleEl.textContent = currentDate.toDateString();
-  subtitleEl.textContent = "";
-
-  const col = document.createElement("div");
-  col.className = "day-column";
-
-  for (let h = 0; h < 24; h++) {
-    const row = document.createElement("div");
-    row.className = "day-hour";
-    row.textContent = h + ":00";
-    col.appendChild(row);
-  }
-
-  // Events
-  const todaysEvents = events.filter((ev) =>
-    isEventOnDate(ev, currentDate)
-  );
-  todaysEvents.forEach((ev) => {
-    const hour = ev.hour ? parseInt(ev.hour) : 12;
-    const row = col.children[hour];
-    const div = document.createElement("div");
-    div.className = "event";
-    div.textContent = ev.title + (ev.repeat === "yearly" ? " 🎂" : "");
-    row.appendChild(div);
+// view toggling
+function setView(v){
+  currentView = v;
+  Object.values(views).forEach(el=>{
+    el.classList.remove('active');
+    el.setAttribute('aria-hidden','true');
   });
-
-  view.appendChild(col);
+  views[v].classList.add('active');
+  views[v].setAttribute('aria-hidden','false');
+  navBtns.forEach(b=>{
+    b.classList.toggle('active', b.dataset.view===v);
+    b.setAttribute('aria-pressed', b.dataset.view===v ? 'true' : 'false');
+  });
+  render();
 }
 
-// ---------- Week View ----------
-function renderWeek() {
-  const view = views.week;
-  view.classList.add("active");
-  view.setAttribute("aria-hidden", false);
+// render entry
+function render(){
+  titleEl.textContent = (currentView==='year') ? currentDate.getFullYear() : formatTitle(currentDate);
+  subtitleEl.textContent = (currentView==='month') ? '' : (currentView==='day'? formatSubtitle(currentDate) : '');
+  if(currentView==='month') renderMonth();
+  else if(currentView==='week') renderWeek();
+  else if(currentView==='day') renderDay();
+  else if(currentView==='year') renderYear();
+  adjustRowHeight(); // make month grid fill
+}
 
+// german holidays func
+function germanHolidays(year) {
+  // Fixed holidays
+  const dates = [
+    [1,1,"Neujahr"],
+    [5,1,"Tag der Arbeit"],
+    [10,3,"Tag der Deutschen Einheit"],
+    [12,25,"1. Weihnachtstag"],
+    [12,26,"2. Weihnachtstag"]
+  ];
+
+  // Easter-based holidays
+  const easter = calcEaster(year);
+  const add = (offset,label)=>{
+    const d = new Date(easter);
+    d.setDate(d.getDate()+offset);
+    dates.push([d.getMonth()+1, d.getDate(), label]);
+  };
+  add(1,"Ostermontag");
+  add(39,"Christi Himmelfahrt");
+  add(50,"Pfingstmontag");
+  add(60,"Fronleichnam");
+
+  return dates.map(([m,d,label])=>({date:`${year}-${m}-${d}`,label}));
+}
+
+// Computus algorithm for Easter Sunday
+function calcEaster(y) {
+  const f = Math.floor;
+  const a = y % 19, b = f(y/100), c = y % 100, d = f(b/4), e = b % 4;
+  const g = f((8*b+13)/25), h = (19*a+b-d-g+15)%30;
+  const i = f(c/4), k = c % 4;
+  const l = (32+2*e+2*i-h-k)%7;
+  const m = f((a+11*h+22*l)/451);
+  const month = f((h+l-7*m+114)/31);
+  const day = ((h+l-7*m+114)%31)+1;
+  return new Date(y, month-1, day);
+}
+
+// MONTH (Monday-first)
+function renderMonth(){
+  const y = currentDate.getFullYear(), m = currentDate.getMonth();
+  const first = new Date(y,m,1);
+  const firstDayIndex = (first.getDay()+6)%7; // Monday=0
+  const lastDate = new Date(y,m+1,0).getDate();
+  const holidays = germanHolidays(y);
+
+  const weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html = `<div class="weekdays">${weekdays.map(w=>`<div>${w}</div>`).join('')}</div>`;
+  html += `<div class="month-grid" id="monthGrid">`;
+
+  // blank cells before first day
+  for(let i=0;i<firstDayIndex;i++) html += `<div class="day-cell empty"></div>`;
+
+  for(let d=1; d<=lastDate; d++){
+    const dt = new Date(y,m,d);
+    const isToday = dt.toDateString() === (new Date()).toDateString();
+    const ds = `${y}-${m+1}-${d}`;
+    const hasEvents = events[ds] && events[ds].length>0;
+     /* Darker Weekends */ 
+    const dayOfWeek = dt.getDay();              
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
+    const holiday = holidays.find(h=>h.date===ds);
+
+    html += `<div class="day-cell${isWeekend?' weekend':''}${holiday?' holiday':''}" 
+                    data-date="${ds}" 
+                    ${holiday?`title="${holiday.label}"`:''}>
+              <div class="day-number ${isToday? 'today' : ''}">${d}</div>
+              <div class="day-events">${ hasEvents ? '<div class="day-dot" title="Has events"></div>' : '' }</div>
+            </div>`;
+  }
+
+  // trailing blanks to fill full weeks
+  const totalCells = firstDayIndex + lastDate;
+  const rem = (7 - (totalCells % 7)) % 7;
+  for(let i=0;i<rem;i++) html += `<div class="day-cell empty"></div>`;
+
+  html += `</div>`;
+  views.month.innerHTML = html;
+
+  // attach handlers
+  document.querySelectorAll('.day-cell[data-date]').forEach(cell=>{
+    cell.addEventListener('click', ()=> openModal(cell.dataset.date));
+  });
+}
+
+// WEEK view
+function renderWeek(){
   const start = new Date(currentDate);
-  start.setDate(start.getDate() - start.getDay());
-
-  titleEl.textContent = "Week of " + start.toDateString();
-  subtitleEl.textContent = "";
-
-  const grid = document.createElement("div");
-  grid.className = "week-grid";
-
-  // Stunden
-  for (let h = 0; h < 24; h++) {
-    const lbl = document.createElement("div");
-    lbl.className = "hour-label";
-    lbl.textContent = h + ":00";
-    grid.appendChild(lbl);
-    for (let d = 0; d < 7; d++) {
-      const cell = document.createElement("div");
-      cell.className = "hour-cell";
-      grid.appendChild(cell);
+  const dayIndex = (start.getDay()+6)%7; // Monday=0
+  start.setDate(start.getDate() - dayIndex);
+  let html = `<div class="week-grid"><div></div>`;
+  const days = [];
+  for(let i=0;i<7;i++){
+    const d = new Date(start);
+    d.setDate(start.getDate()+i);
+    days.push(d);
+    html += `<div style="text-align:center;border-bottom:1px solid #2b2b2b;padding:6px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}<br>${d.getDate()}</div>`;
+  }
+  for(let h=0; h<24; h++){
+    html += `<div class="hour-label">${pad(h)}:00</div>`;
+    for(let i=0;i<7;i++){
+      const d = days[i];
+      const ds = `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+      html += `<div class="hour-cell" data-date="${ds}" data-hour="${h}"></div>`;
     }
   }
+  html += `</div>`;
+  views.week.innerHTML = html;
 
-  // Events
-  events.forEach((ev) => {
-    for (let d = 0; d < 7; d++) {
-      const day = new Date(start);
-      day.setDate(start.getDate() + d);
-      if (isEventOnDate(ev, day)) {
-        const row = ev.hour ? parseInt(ev.hour) : 12;
-        const idx = row * 8 + (d + 1); // 8 Spalten (Stunden + 7 Tage)
-        const cell = grid.children[idx];
-        const div = document.createElement("div");
-        div.className = "event";
-        div.textContent = ev.title + (ev.repeat === "yearly" ? " 🎂" : "");
-        cell.appendChild(div);
+  for(const ds in events){
+    (events[ds]||[]).forEach(ev=>{
+      if(ev.hour!==undefined){
+        const sel = `.hour-cell[data-date="${ds}"][data-hour="${ev.hour}"]`;
+        const cell = document.querySelector(sel);
+        if(cell){
+          const el = document.createElement('div');
+          el.className = 'event';
+          el.textContent = ev.text;
+          cell.appendChild(el);
+        }
+      }
+    });
+  }
+
+  document.querySelectorAll('.hour-cell').forEach(cell=>{
+    cell.addEventListener('click', ()=> openModal(cell.dataset.date, parseInt(cell.dataset.hour,10)));
+  });
+}
+
+// DAY view
+function renderDay(){
+  const y = currentDate.getFullYear(), m = currentDate.getMonth(), d = currentDate.getDate();
+  const ds = `${y}-${m+1}-${d}`;
+  let html = `<div style="display:grid;grid-template-columns:60px 1fr">`;
+  for(let h=0; h<24; h++){
+    html += `<div class="hour-label">${pad(h)}:00</div>`;
+    html += `<div class="day-hour" data-date="${ds}" data-hour="${h}"></div>`;
+  }
+  html += `</div>`;
+  views.day.innerHTML = html;
+
+  (events[ds]||[]).forEach(ev=>{
+    if(ev.hour!==undefined){
+      const cell = document.querySelector(`.day-hour[data-date="${ds}"][data-hour="${ev.hour}"]`);
+      if(cell){
+        const el = document.createElement('div');
+        el.className='event';
+        el.textContent = ev.text;
+        cell.appendChild(el);
+      }
+    } else {
+      const cell = document.querySelector(`.day-hour[data-date="${ds}"][data-hour="0"]`);
+      if(cell){
+        const el = document.createElement('div');
+        el.className='event';
+        el.textContent = ev.text + ' (all day)';
+        cell.appendChild(el);
       }
     }
   });
 
-  view.appendChild(grid);
-}
-
-// ---------- Month View ----------
-function renderMonth() {
-  const view = views.month;
-  view.classList.add("active");
-  view.setAttribute("aria-hidden", false);
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const first = new Date(year, month, 1);
-  const last = new Date(year, month + 1, 0);
-
-  titleEl.textContent = currentDate.toLocaleString(undefined, {
-    month: "long",
-    year: "numeric",
+  document.querySelectorAll('.day-hour').forEach(cell=>{
+    cell.addEventListener('click', ()=> openModal(cell.dataset.date, parseInt(cell.dataset.hour,10)));
   });
-  subtitleEl.textContent = "";
-
-  const grid = document.createElement("div");
-  grid.className = "month-grid";
-
-  // Leerfelder vor dem 1.
-  for (let i = 0; i < first.getDay(); i++) {
-    const empty = document.createElement("div");
-    empty.className = "day-cell";
-    grid.appendChild(empty);
-  }
-
-  // Tage
-  for (let d = 1; d <= last.getDate(); d++) {
-    const date = new Date(year, month, d);
-    const cell = document.createElement("div");
-    cell.className = "day-cell";
-    const num = document.createElement("div");
-    num.className = "day-number";
-    num.textContent = d;
-    if (isToday(date)) num.classList.add("today");
-    cell.appendChild(num);
-
-    // Events
-    const todaysEvents = events.filter((ev) => isEventOnDate(ev, date));
-    if (todaysEvents.length) {
-      const dots = document.createElement("div");
-      dots.className = "day-events";
-      todaysEvents.forEach((ev) => {
-        const dot = document.createElement("div");
-        dot.className = "day-dot";
-        dot.title = ev.title + (ev.repeat === "yearly" ? " 🎂" : "");
-        dots.appendChild(dot);
-      });
-      cell.appendChild(dots);
-    }
-
-    cell.onclick = () => openModal(date);
-    grid.appendChild(cell);
-  }
-
-  view.appendChild(grid);
 }
 
-// ---------- Year View ----------
-function renderYear() {
-  const view = views.year;
-  view.classList.add("active");
-  view.setAttribute("aria-hidden", false);
-
-  const year = currentDate.getFullYear();
-  titleEl.textContent = year;
-  subtitleEl.textContent = "";
-
-  const wrapper = document.createElement("div");
-  wrapper.className = "year-grid";
-
-  for (let m = 0; m < 12; m++) {
-    const monthDiv = document.createElement("div");
-    monthDiv.className = "year-month";
-    monthDiv.innerHTML = `<strong>${new Date(year, m).toLocaleString(undefined, {
-      month: "long",
-    })}</strong>`;
-    wrapper.appendChild(monthDiv);
+// YEAR view
+function renderYear(){
+  const y = currentDate.getFullYear();
+  let html = `<div class="year-grid">`;
+  for(let m=0;m<12;m++){
+    const monthStart = new Date(y,m,1);
+    const monthName = monthStart.toLocaleString(undefined,{month:'long'});
+    html += `<div class="year-month" data-month="${m}" data-year="${y}">
+               <strong>${monthName}</strong>
+               <div style="font-size:12px;margin-top:6px">${renderMiniMonth(y,m)}</div>
+             </div>`;
   }
+  html += `</div>`;
+  views.year.innerHTML = html;
 
-  view.appendChild(wrapper);
+  document.querySelectorAll('.year-month').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const yy = parseInt(el.dataset.year,10), mm = parseInt(el.dataset.month,10);
+      currentDate = new Date(yy, mm, 1);
+      setView('month');
+    });
+  });
 }
 
-// ========== EVENTS ==========
+function renderMiniMonth(y,m){
+  const first = new Date(y,m,1);
+  const firstIdx = (first.getDay()+6)%7;
+  const lastDate = new Date(y,m+1,0).getDate();
+  const holidays = germanHolidays(y);
 
-function openModal(date) {
-  selectedDate = date.toISOString().split("T")[0]; // YYYY-MM-DD
-  modalDateEl.textContent = date.toDateString();
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", false);
+  let mini = '<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
+  for(let i=0;i<firstIdx;i++) mini += `<div></div>`;
+  for(let d=1; d<=lastDate; d++){
+    const dt = new Date(y,m,d);
+    const dayOfWeek = dt.getDay();
+    const isWeekend = (dayOfWeek===0 || dayOfWeek===6);
+    const ds = `${y}-${m+1}-${d}`;
+    const holiday = holidays.find(h=>h.date===ds);
 
-  eventListEl.innerHTML = "";
-  const todaysEvents = events.filter((ev) =>
-    isEventOnDate(ev, date)
-  );
-  todaysEvents.forEach((ev) => {
+    mini += `<div style="padding:1px;${isWeekend?'background:#252627;':''}${holiday?'color:#e84545;font-weight:bold;':''}" 
+                  ${holiday?`title="${holiday.label}"`:''}>
+                ${d}
+             </div>`;
+  }
+  mini += '</div>';
+  return mini;
+}
+
+/* Modal */
+let modalOpenFor = null;
+
+function openModal(dateStr, hour){
+  modalOpenFor = {date: dateStr, hour: hour};
+  modal.classList.remove('hidden');
+  modal.setAttribute('aria-hidden','false');
+  modalDate.textContent = new Date(dateStr).toDateString() + (hour!==undefined?` ${pad(hour)}:00`:'');
+  eventInput.value = '';
+  renderEventList(dateStr);
+
+  eventHourSelect.innerHTML = '';
+  for(let h=0; h<24; h++){
+    const opt = document.createElement('option');
+    opt.value = h; opt.text = `${pad(h)}:00`;
+    eventHourSelect.appendChild(opt);
+  }
+
+  if(hour!==undefined){
+    eventHourCheckbox.checked = true;
+    eventHourSelect.disabled = false;
+    eventHourSelect.value = hour;
+  } else {
+    eventHourCheckbox.checked = false;
+    eventHourSelect.disabled = true;
+  }
+}
+
+function renderEventList(dateStr){
+  eventList.innerHTML = "";
+  const [y,m,d] = dateStr.split("-").map(Number);
+  const holiday = germanHolidays(y).find(h=>h.date===dateStr);
+
+  if(holiday){
     const li = document.createElement("li");
-    li.textContent = ev.title + (ev.repeat === "yearly" ? " 🎂" : "");
-    eventListEl.appendChild(li);
+    li.textContent = "📅 " + holiday.label;
+    li.style.color = "#e84545";
+    li.style.fontWeight = "bold";
+    eventList.appendChild(li);
+  }
+
+  (events[dateStr]||[]).forEach((e, idx)=>{
+    const li = document.createElement('li');
+    li.textContent = e.hour!==undefined ? `${pad(e.hour)}:00 — ${e.text}` : e.text;
+    const del = document.createElement('button');
+    del.textContent = 'Delete';
+    del.style.cssText = 'float:right;background:#900;color:#fff;border:none;padding:4px 6px;border-radius:4px';
+    del.addEventListener('click', ()=>{
+      events[dateStr].splice(idx,1);
+      if(events[dateStr].length===0) delete events[dateStr];
+      localStorage.setItem('events', JSON.stringify(events));
+      renderEventList(dateStr);
+      render();
+    });
+    li.appendChild(del);
+    eventList.appendChild(li);
   });
-
-  eventInput.value = "";
-  repeatCheckbox.checked = false;
 }
 
-function closeModal() {
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", true);
-}
+addEventBtn.addEventListener('click', ()=>{
+  const txt = eventInput.value.trim();
+  if(!txt) return alert('Enter event text');
+  const dateStr = modalOpenFor.date;
+  const useHour = eventHourCheckbox.checked ? parseInt(eventHourSelect.value,10) : modalOpenFor.hour;
+  if(!events[dateStr]) events[dateStr]=[];
+  const ev = useHour!==undefined ? { text: txt, hour: useHour } : { text: txt };
+  events[dateStr].push(ev);
+  localStorage.setItem('events', JSON.stringify(events));
+  modal.classList.add('hidden');
+  modal.setAttribute('aria-hidden','true');
+  render();
+});
 
-function addEvent() {
-  const title = eventInput.value.trim();
-  if (!title) return;
+closeModalBtn.addEventListener('click', ()=>{
+  modal.classList.add('hidden'); 
+  modal.setAttribute('aria-hidden','true'); 
+});
 
-  const newEvent = {
-    title,
-    date: selectedDate,
-    hour: eventHourCheckbox.checked ? eventHourSelect.value : null,
-    repeat: repeatCheckbox.checked ? "yearly" : null,
-  };
+eventHourCheckbox.addEventListener('change', ()=>{
+  eventHourSelect.disabled = !eventHourCheckbox.checked;
+});
 
-  events.push(newEvent);
-  saveEvents();
-  closeModal();
+/* Navigation */
+navBtns.forEach(b=> b.addEventListener('click', ()=>{
+  setView(b.dataset.view);
+}));
+
+todayBtn.addEventListener('click', ()=>{
+  currentDate = new Date();
+  setView('month');
+});
+
+function prev(){
+  if(currentView==='day') currentDate.setDate(currentDate.getDate()-1);
+  else if(currentView==='week') currentDate.setDate(currentDate.getDate()-7);
+  else if(currentView==='month') currentDate.setMonth(currentDate.getMonth()-1);
+  else if(currentView==='year') currentDate.setFullYear(currentDate.getFullYear()-1);
   render();
 }
-
-// ========== STORAGE ==========
-
-function saveEvents() {
-  localStorage.setItem("calendarEvents", JSON.stringify(events));
+function next(){
+  if(currentView==='day') currentDate.setDate(currentDate.getDate()+1);
+  else if(currentView==='week') currentDate.setDate(currentDate.getDate()+7);
+  else if(currentView==='month') currentDate.setMonth(currentDate.getMonth()+1);
+  else if(currentView==='year') currentDate.setFullYear(currentDate.getFullYear()+1);
+  render();
 }
-function loadEvents() {
-  return JSON.parse(localStorage.getItem("calendarEvents") || "[]");
-}
+prevBtn.addEventListener('click', prev);
+nextBtn.addEventListener('click', next);
 
-// ========== HELPERS ==========
+/* Swipe left/right for prev/next and basic mouse drag */
+let touchStartX = 0, touchStartY = 0;
+let touchEndX = 0, touchEndY = 0;
 
-function isToday(d) {
-  const t = new Date();
-  return (
-    d.getDate() === t.getDate() &&
-    d.getMonth() === t.getMonth() &&
-    d.getFullYear() === t.getFullYear()
-  );
-}
+calendarArea.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, {passive:true});
 
-function isEventOnDate(event, dateObj) {
-  const evDate = new Date(event.date);
+calendarArea.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  touchEndY = e.changedTouches[0].screenY;
+  handleSwipe();
+}, {passive:true});
 
-  if (event.repeat === "yearly") {
-    return (
-      evDate.getDate() === dateObj.getDate() &&
-      evDate.getMonth() === dateObj.getMonth()
-    );
-  } else {
-    return evDate.toDateString() === dateObj.toDateString();
+// mouse fallback for desktop
+let isDown = false, startX = 0;
+calendarArea.addEventListener('mousedown', e => {
+  isDown = true;
+  startX = e.screenX;
+}, {passive:true});
+
+calendarArea.addEventListener('mouseup', e => {
+  if (!isDown) return;
+  isDown = false;
+  const diff = e.screenX - startX;
+  if (Math.abs(diff) > 60) {
+    if (diff > 0) prev(); else next();
   }
+});
+
+function handleSwipe(){
+  const dx = touchEndX - touchStartX;
+  const dy = touchEndY - touchStartY;
+  if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return; // ignore vertical swipes
+  if (dx > 0) prev(); else next();
 }
 
-// Start
-init();
+/* Make month grid rows fill the available height between header & footer */
+function adjustRowHeight(){
+  const footer = document.querySelector('.footer');
+  const footerRect = footer ? footer.getBoundingClientRect() : { height: 0 };
+  const available = window.innerHeight - footerRect.height;
+
+  const weekdays = document.querySelector('.weekdays');
+  const weekdaysH = weekdays ? weekdays.getBoundingClientRect().height : 0;
+
+  const rows = 6; // maximum weeks
+  const rowHeight = Math.max(60, Math.floor((available - weekdaysH - 8) / rows));
+  document.documentElement.style.setProperty('--row-height', rowHeight + 'px');
+}
+
+/* Initialize */
+window.addEventListener('resize', adjustRowHeight);
+setView('month'); // initial view
+
+
+
