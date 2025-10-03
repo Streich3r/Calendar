@@ -6,17 +6,15 @@
   --text:#e8eaed;
   --cell-border:#2c2c2c;
   --event:#8ab4f8;
-  --birthday:#34c759;
+  --birthday:#4caf50;
   --footer-height:112px;
 }
 
-/* Reset & layout */
 html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
 .app{height:100%;display:flex;flex-direction:column;}
-.main{flex:1;display:block;overflow:auto;background:linear-gradient(#202124,#151617)}
+.main{flex:1;display:block;overflow:hidden;background:linear-gradient(#202124,#151617)}
 .view{display:none;padding:8px;box-sizing:border-box}
 .view.active{display:block;height:calc(100vh - var(--footer-height))}
-
 .footer{background:var(--panel);border-top:1px solid #444;box-shadow:0 -6px 18px rgba(0,0,0,0.4)}
 .switchbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #2b2b2b}
 .title-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
@@ -26,31 +24,25 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .bottom-nav{display:flex}
 .nav-btn{flex:1;padding:12px 6px;border:none;background:transparent;color:var(--muted);font-size:13px}
 .nav-btn.active{color:var(--text);border-top:3px solid var(--accent)}
-
-/* Month view grid */
 .weekdays{display:grid;grid-template-columns:repeat(7,1fr);background:var(--panel);color:var(--muted);font-size:12px;padding:6px 0;text-align:center}
 .month-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:var(--row-height,80px);gap:2px}
-.day-cell{background:transparent;border:1px solid var(--cell-border);padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;cursor:pointer;overflow:hidden}
+.day-cell{background:transparent;border:1px solid var(--cell-border);padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;cursor:pointer;overflow:hidden;position:relative}
 .day-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;margin-top:4px;font-weight:500}
 .day-number.today{background:var(--accent);color:white}
-.day-events{margin-top:6px;display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:wrap}
+.day-events{margin-top:6px;display:flex;gap:2px;align-items:center;justify-content:center;flex-wrap:wrap;position:absolute;bottom:2px}
 .day-dot{width:6px;height:6px;border-radius:50%;background:var(--event)}
 .day-dot.birthday{background:var(--birthday)}
+.day-cell.holiday .day-number{background:#e84545;color:#fff}
 
 .week-grid{display:grid;grid-template-columns:60px repeat(7,1fr);align-items:start;border-top:1px solid #2b2b2b}
 .hour-label{padding:6px 8px;font-size:11px;color:var(--muted);border-right:1px solid #2b2b2b}
 .hour-cell{height:56px;border:1px solid var(--cell-border);position:relative;padding:2px;overflow:hidden}
 .event{position:absolute;left:4px;right:4px;background:var(--accent);color:#fff;padding:4px 6px;border-radius:6px;font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-
-.day-column{display:grid;grid-template-columns:1fr;border-left:1px solid #2b2b2b}
 .day-hour{height:56px;border:1px solid var(--cell-border);position:relative;padding:6px}
 
-/* Year view mini month */
-.year-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 6px; padding: 6px; height: calc(100vh - var(--footer-height)); overflow-y:hidden; }
-.year-month { background: #242526; border: 1px solid #2b2b2b; border-radius: 6px; padding: 6px; font-size: 11px; position:relative; }
-.year-month strong { font-size: 13px; }
-
-.day-cell.holiday .day-number { background: #e84545; color: #fff; }
+.year-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:6px;height:calc(100vh - 120px);overflow:hidden}
+.year-month{background:var(--panel);border:1px solid #2b2b2b;border-radius:6px;padding:6px;font-size:11px;position:relative}
+.year-month strong{font-size:13px}
 
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)}
 .modal.hidden{display:none}
@@ -61,7 +53,4 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 .btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:6px}
 .btn.alt{background:#3a3b3c}
-
 .sr-only{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
-
-@media (min-width:700px){ .month-grid{gap:4px} }
