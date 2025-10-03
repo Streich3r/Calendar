@@ -1,90 +1,59 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Calendar</title>
-  <!-- Theme-Farbe für Browser-UI -->
-  <meta name="theme-color" content="#0b0d12">
-
-  <link rel="stylesheet" href="styles.css?v=4">
-
-  <!-- Manifest für PWA -->
-  <link rel="manifest" href="manifest.json">
-
-  <!-- Favicons -->
-  <link rel="icon" type="image/png" href="icon-512.png">
-  <link rel="apple-touch-icon" href="icon-512.png">
-
-  <!-- Windows Tile Icons -->
-  <meta name="msapplication-TileImage" content="icon-512.png">
-  <meta name="msapplication-TileColor" content="#0b0d12">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalender App</title>
+<link rel="stylesheet" href="styles.css">
 </head>
-  
 <body>
-  <div id="app" class="app">
-    <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
-      <section id="dayView" class="view" aria-hidden="true"></section>
-      <section id="weekView" class="view" aria-hidden="true"></section>
-      <section id="monthView" class="view" aria-hidden="true"></section>
-      <section id="yearView" class="view" aria-hidden="true"></section>
-    </main>
-
-    <footer class="footer" role="contentinfo">
-      <div class="switchbar">
-        <button id="prevBtn" class="icon-btn" aria-label="Previous">‹</button>
-        <div class="title-wrap">
-          <div id="title" class="title">Month Year</div>
-          <div id="subtitle" class="subtitle"></div>
-        </div>
-        <button id="nextBtn" class="icon-btn" aria-label="Next">›</button>
-      </div>
-
-      <nav class="bottom-nav" role="navigation" aria-label="Views">
-        <button class="nav-btn" data-view="day" aria-pressed="false">Day</button>
-        <button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
-        <button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
-        <button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
-        <button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
-      </nav>
-    </footer>
+<div class="app">
+  <div class="main" id="calendarArea">
+    <div class="view" id="dayView"></div>
+    <div class="view" id="weekView"></div>
+    <div class="view active" id="monthView"></div>
+    <div class="view" id="yearView"></div>
   </div>
-
-  <!-- Event Modal -->
-  <div id="eventModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="modal-content">
-      <h2 id="modalDate">Date</h2>
-
-      <ul id="eventList" class="event-list" aria-live="polite"></ul>
-
-      <label for="eventInput" class="sr-only">Event text</label>
-      <input id="eventInput" type="text" placeholder="Event title (required)" />
-
-      <div class="modal-row">
-        <label>
-          <input id="eventHourCheckbox" type="checkbox" /> At hour
-        </label>
-        <select id="eventHour" aria-label="Select hour" disabled></select>
+  
+  <div class="footer">
+    <div class="switchbar">
+      <button id="prevBtn" class="icon-btn">&#8592;</button>
+      <div class="title-wrap">
+        <div class="title" id="title">Month</div>
+        <div class="subtitle" id="subtitle"></div>
       </div>
-
-      <div class="modal-row">
-        <label>
-          <input id="eventRepeatYearly" type="checkbox" /> Birthday (yearly)
-        </label>
-      </div>
-
-      <div class="modal-actions">
-        <button id="addEventBtn" class="btn">Add</button>
-        <button id="closeModalBtn" class="btn alt">Close</button>
-      </div>
+      <button id="nextBtn" class="icon-btn">&#8594;</button>
+      <button id="todayBtn" class="icon-btn">Today</button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" data-view="month">Month</button>
+      <button class="nav-btn" data-view="week">Week</button>
+      <button class="nav-btn" data-view="day">Day</button>
+      <button class="nav-btn" data-view="year">Year</button>
     </div>
   </div>
+</div>
 
-  <script src="app.js?v=5" defer></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
-    }
-  </script>
+<!-- Modal -->
+<div class="modal hidden" id="eventModal">
+  <div class="modal-content">
+    <div id="modalDate"></div>
+    <input type="text" id="eventInput" placeholder="Event text">
+    <div class="modal-row">
+      <input type="checkbox" id="eventHourCheckbox"><label for="eventHourCheckbox">Specify Hour</label>
+      <select id="eventHour" disabled></select>
+    </div>
+    <div class="modal-row">
+      <input type="checkbox" id="eventRepeatYearly"><label for="eventRepeatYearly">Birthday / Repeat yearly</label>
+    </div>
+    <ul class="event-list" id="eventList"></ul>
+    <div class="modal-actions">
+      <button class="btn" id="addEventBtn">Add</button>
+      <button class="btn alt" id="closeModalBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
