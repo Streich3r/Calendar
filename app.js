@@ -1,8 +1,16 @@
+/* app.js - Calendar PWA
+   - Multi-view: day/week/month/year
+   - Monday-first, today circle, events (localStorage)
+   - Swipe left/right for prev/next depending on view
+   - JS computes month row heights so grid fills screen
+   - Birthday support: yearly recurring
+*/
+
 const $ = id => document.getElementById(id);
 
 // State
 let currentDate = new Date();
-let currentView = 'month';
+let currentView = 'month'; // day, week, month, year
 let events = JSON.parse(localStorage.getItem('events') || '{}'); // { "YYYY-M-D": [{text,hour?,birthday?}, ...] }
 
 // Elements
@@ -171,7 +179,7 @@ function renderMiniMonth(y,m){
     if(isWeekend(dt)) style+='background:#252627;';
     if(holiday) style+='color:#e84545;font-weight:bold;';
     if(hasNormalEvent) dots+=`<div class="day-dot" style="position:absolute;bottom:1px;width:4px;height:4px;background:var(--event);border-radius:50%"></div>`;
-    if(hasBirthday) dots+=`<div class="day-dot birthday" style="position:absolute;bottom:1px;width:4px;height:4px"></div>`;
+    if(hasBirthday) dots+=`<div class="day-dot birthday" style="position:absolute;bottom:1px;width:4px;height:4px;background:var(--birthday);border-radius:50%"></div>`;
     mini+=`<div style="padding:1px;position:relative;${style}" title="${holiday?holiday.label:''}">${d}${dots}</div>`;
   }
   mini+=`</div>`; return mini;
