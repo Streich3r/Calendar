@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Calendar</title>
   <meta name="theme-color" content="#0b0d12">
+
   <link rel="stylesheet" href="styles.css?v=5">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="icon-512.png">
@@ -18,7 +19,7 @@
     <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
       <section id="dayView" class="view" aria-hidden="true"></section>
       <section id="weekView" class="view" aria-hidden="true"></section>
-      <section id="monthView" class="view" aria-hidden="true"></section>
+      <section id="monthView" class="view active" aria-hidden="false"></section>
       <section id="yearView" class="view" aria-hidden="true"></section>
     </main>
 
@@ -33,11 +34,11 @@
       </div>
 
       <nav class="bottom-nav" role="navigation" aria-label="Views">
-        <button class="nav-btn" data-view="day" aria-pressed="false">Day</button>
-        <button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
-        <button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
-        <button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
-        <button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
+        <button class="nav-btn" data-view="day">Day</button>
+        <button class="nav-btn" data-view="week">Week</button>
+        <button class="nav-btn active" data-view="month">Month</button>
+        <button class="nav-btn" data-view="year">Year</button>
+        <button id="todayBtn" class="nav-btn">Today</button>
       </nav>
     </footer>
   </div>
@@ -47,7 +48,7 @@
     <div class="modal-content">
       <h2 id="modalDate">Date</h2>
 
-      <ul id="eventList" class="event-list" aria-live="polite"></ul>
+      <ul id="eventList" class="event-list"></ul>
 
       <label for="eventInput" class="sr-only">Event text</label>
       <input id="eventInput" type="text" placeholder="Event title (required)" />
@@ -75,7 +76,7 @@
   <script src="app.js?v=5" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{});
     }
   </script>
 </body>
