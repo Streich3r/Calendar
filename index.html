@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Calendar</title>
+  <title>Kalender</title>
   <meta name="theme-color" content="#0b0d12">
   <link rel="stylesheet" href="styles.css?v=5">
   <link rel="manifest" href="manifest.json">
@@ -12,68 +12,65 @@
   <meta name="msapplication-TileImage" content="icon-512.png">
   <meta name="msapplication-TileColor" content="#0b0d12">
 </head>
-  
+
 <body>
   <div id="app" class="app">
-    <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
+    <main id="calendarArea" class="main" role="main">
       <section id="dayView" class="view" aria-hidden="true"></section>
       <section id="weekView" class="view" aria-hidden="true"></section>
       <section id="monthView" class="view" aria-hidden="true"></section>
       <section id="yearView" class="view" aria-hidden="true"></section>
     </main>
 
-    <footer class="footer" role="contentinfo">
+    <footer class="footer">
       <div class="switchbar">
-        <button id="prevBtn" class="icon-btn" aria-label="Previous">‹</button>
+        <button id="prevBtn" class="icon-btn" aria-label="Zurück">‹</button>
         <div class="title-wrap">
-          <div id="title" class="title">Month Year</div>
+          <div id="title" class="title"></div>
           <div id="subtitle" class="subtitle"></div>
         </div>
-        <button id="nextBtn" class="icon-btn" aria-label="Next">›</button>
+        <button id="nextBtn" class="icon-btn" aria-label="Weiter">›</button>
       </div>
 
-      <nav class="bottom-nav" role="navigation" aria-label="Views">
-        <button class="nav-btn" data-view="day" aria-pressed="false">Day</button>
-        <button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
-        <button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
-        <button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
-        <button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
+      <nav class="bottom-nav">
+        <button class="nav-btn" data-view="day">Tag</button>
+        <button class="nav-btn" data-view="week">Woche</button>
+        <button class="nav-btn active" data-view="month">Monat</button>
+        <button class="nav-btn" data-view="year">Jahr</button>
+        <button id="todayBtn" class="nav-btn">Heute</button>
       </nav>
     </footer>
   </div>
 
-  <!-- Event Modal -->
-  <div id="eventModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
+  <!-- Modal -->
+  <div id="eventModal" class="modal hidden">
     <div class="modal-content">
-      <h2 id="modalDate">Date</h2>
+      <h2 id="modalDate">Datum</h2>
 
-      <ul id="eventList" class="event-list" aria-live="polite"></ul>
+      <ul id="eventList" class="event-list"></ul>
 
-      <label for="eventInput" class="sr-only">Event text</label>
-      <input id="eventInput" type="text" placeholder="Event title (required)" />
+      <input id="eventInput" type="text" placeholder="Titel (Pflichtfeld)" />
 
       <div class="modal-row">
-        <label>
-          <input id="eventBirthdayCheckbox" type="checkbox" /> Birthday
-        </label>
-        <label>
-          <input id="eventHourCheckbox" type="checkbox" /> At hour
-        </label>
-        <select id="eventHour" aria-label="Select hour" disabled>
-        </select>
+        <label><input id="eventHourCheckbox" type="checkbox"> Uhrzeit</label>
+        <select id="eventHour" disabled></select>
+      </div>
+
+      <div class="modal-row">
+        <label><input id="birthdayCheckbox" type="checkbox"> Geburtstag</label>
       </div>
 
       <div class="modal-actions">
-        <button id="addEventBtn" class="btn">Add</button>
-        <button id="closeModalBtn" class="btn alt">Close</button>
+        <button id="addEventBtn" class="btn">Hinzufügen</button>
+        <button id="closeModalBtn" class="btn alt">Schließen</button>
       </div>
     </div>
   </div>
 
-  <script src="app.js?v=6" defer></script>
+  <script src="app.js?v=5" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
+      navigator.serviceWorker.register('service-worker.js');
     }
   </script>
 </body>
