@@ -1,303 +1,360 @@
-// === Utility Functions ===
-const today = new Date();
-let currentView = 'month';
+const views = {
+  day: document.getElementById("dayView"),
+  week: document.getElementById("weekView"),
+  month: document.getElementById("monthView"),
+  year: document.getElementById("yearView")
+};
+const titleEl = document.getElementById("title");
+const subtitleEl = document.getElementById("subtitle");
+const navBtns = document.querySelectorAll(".nav-btn");
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+const todayBtn = document.getElementById("todayBtn");
+
+const modal = document.getElementById("eventModal");
+const modalDate = document.getElementById("modalDate");
+const eventList = document.getElementById("eventList");
+const eventInput = document.getElementById("eventInput");
+const eventHourCheckbox = document.getElementById("eventHourCheckbox");
+const eventHour = document.getElementById("eventHour");
+const birthdayCheckbox = document.getElementById("birthdayCheckbox");
+const addEventBtn = document.getElementById("addEventBtn");
+const closeModalBtn = document.getElementById("closeModalBtn");
+
+let currentView = "month";
 let currentDate = new Date();
+let events = JSON.parse(localStorage.getItem("events") || "[]");
 
-const events = JSON.parse(localStorage.getItem('events') || '[]');
+// Feiertage (Deutschland Beispiel)
+const holidays = {
+  "01-01": "Neujahr",
+  "05-01": "Tag der Arbeit",
+  "10-03": "Tag der Deutschen Einheit",
+  "12-25": "1. Weihnachtstag",
+  "12-26": "2. Weihnachtstag"
+};
 
-// Feiertage (Deutschland, fix + variabel)
-function getGermanHolidays(year) {
-  const holidays = [];
-
-  // Feste Feiertage
-  const fixed = [
-    [1, 1, "Neujahr"],
-    [5, 1, "Tag der Arbeit"],
-    [10, 3, "Tag der Deutschen Einheit"],
-    [12, 25, "1. Weihnachtstag"],
-    [12, 26, "2. Weihnachtstag"],
-  ];
-  fixed.forEach(([m, d, name]) => holidays.push({ date: new Date(year, m - 1, d), name }));
-
-  // Bewegliche Feiertage (Ostern etc.)
-  const easter = getEasterDate(year);
-  const addDays = (base, days) => new Date(base.getFullYear(), base.getMonth(), base.getDate() + days);
-  holidays.push({ date: addDays(easter, -2), name: "Karfreitag" });
-  holidays.push({ date: addDays(easter, 1), name: "Ostermontag" });
-  holidays.push({ date: addDays(easter, 39), name: "Christi Himmelfahrt" });
-  holidays.push({ date: addDays(easter, 50), name: "Pfingstmontag" });
-
-  return holidays;
+// Stundenoptionen
+for (let h = 0; h < 24; h++) {
+  const opt = document.createElement("option");
+  opt.value = h;
+  opt.textContent = `${String(h).padStart(2, "0")}:00`;
+  eventHour.appendChild(opt);
 }
 
-function getEasterDate(year) {
-  const f = Math.floor,
-    G = year % 19,
-    C = f(year / 100),
-    H = (C - f(C / 4) - f((8 * C + 13) / 25) + 19 * G + 15) % 30,
-    I = H - f(H / 28) * (1 - f(29 / (H + 1)) * f((21 - G) / 11)),
-    J = (year + f(year / 4) + I + 2 - C + f(C / 4)) % 7,
-    L = I - J;
-  const month = 3 + f((L + 40) / 44);
-  const day = L + 28 - 31 * f(month / 4);
-  return new Date(year, month - 1, day);
+// Uhrzeit aktivieren/deaktivieren
+eventHourCheckbox.addEventListener("change", () => {
+  eventHour.disabled = !eventHourCheckbox.checked;
+});
+
+// Modal öffnen
+function openModal(dateStr) {
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  modalDate.textContent = dateStr;
+  eventInput.value = "";
+  eventHourCheckbox.checked = false;
+  eventHour.disabled = true;
+  birthdayCheckbox.checked = false;
+  renderEventList(dateStr);
 }
 
-// === UI Updates ===
-function switchView(view) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(`${view}-view`).classList.add('active');
-  document.querySelectorAll('.nav-btn').forEach(btn =>
-    btn.classList.toggle('active', btn.dataset.view === view)
-  );
-  currentView = view;
-
-  if (view === 'month') renderMonth();
-  if (view === 'week') renderWeek();
-  if (view === 'day') renderDay();
-  if (view === 'year') renderYear();
+// Modal schließen
+function closeModal() {
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
 }
 
-document.querySelectorAll('.nav-btn').forEach(btn =>
-  btn.addEventListener('click', () => switchView(btn.dataset.view))
-);
+// Event hinzufügen
+addEventBtn.addEventListener("click", () => {
+  const text = eventInput.value.trim();
+  if (!text) return;
+  const dateStr = modalDate.textContent;
+  const atHour = eventHourCheckbox.checked;
+  const hour = atHour ? parseInt(eventHour.value) : null;
+  const isBirthday = birthdayCheckbox.checked;
 
-// === Rendering ===
+  const event = { date: dateStr, text, hour, isBirthday };
+
+  // Geburtstage sollen jährlich wiederholt werden
+  if (isBirthday) event.yearly = true;
+
+  events.push(event);
+  saveEvents();
+  closeModal();
+  render();
+});
+
+closeModalBtn.addEventListener("click", closeModal);
+
+function saveEvents() {
+  localStorage.setItem("events", JSON.stringify(events));
+}
+
+// Kalender neu rendern
+function render() {
+  updateTitle();
+  for (let key in views) views[key].classList.remove("active");
+  views[currentView].classList.add("active");
+  views[currentView].setAttribute("aria-hidden", "false");
+
+  switch (currentView) {
+    case "day": renderDay(); break;
+    case "week": renderWeek(); break;
+    case "month": renderMonth(); break;
+    case "year": renderYear(); break;
+  }
+}
+
+// Titel aktualisieren
+function updateTitle() {
+  const options = { month: "long", year: "numeric" };
+  titleEl.textContent = currentDate.toLocaleDateString(undefined, options);
+  subtitleEl.textContent = "";
+}
+
+// -------------------- MONTH VIEW --------------------
 function renderMonth() {
-  const grid = document.querySelector('.month-grid');
-  const title = document.querySelector('.title');
-  grid.innerHTML = '';
+  const view = views.month;
+  view.innerHTML = "";
 
-  const year = currentDate.getFullYear();
+  const now = new Date();
   const month = currentDate.getMonth();
-  const holidays = getGermanHolidays(year);
+  const year = currentDate.getFullYear();
 
   const firstDay = new Date(year, month, 1);
   const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  title.textContent = `${firstDay.toLocaleString('de-DE', { month: 'long' })} ${year}`;
+  const weekdays = document.createElement("div");
+  weekdays.className = "weekdays";
+  ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d => {
+    const el = document.createElement("div");
+    el.textContent = d;
+    weekdays.appendChild(el);
+  });
+  view.appendChild(weekdays);
 
-  // Blank cells
-  for (let i = 0; i < startDay; i++) {
-    const empty = document.createElement('div');
-    grid.appendChild(empty);
-  }
+  const grid = document.createElement("div");
+  grid.className = "month-grid";
+  view.appendChild(grid);
 
-  for (let d = 1; d <= daysInMonth; d++) {
-    const date = new Date(year, month, d);
-    const cell = document.createElement('div');
-    cell.className = 'day-cell';
-    const number = document.createElement('div');
-    number.className = 'day-number';
+  const totalCells = Math.ceil((daysInMonth + startDay) / 7) * 7;
+  const todayStr = formatDate(now);
 
-    // Feiertag check
-    const holiday = holidays.find(h =>
-      h.date.getDate() === d && h.date.getMonth() === month
-    );
-    if (holiday) number.classList.add('holiday');
+  for (let i = 0; i < totalCells; i++) {
+    const cell = document.createElement("div");
+    cell.className = "day-cell";
 
-    // Heute check
-    const isToday =
-      date.toDateString() === today.toDateString();
-    if (isToday) number.classList.add('today');
+    const dayNum = document.createElement("div");
+    dayNum.className = "day-number";
 
-    number.textContent = d;
-    const dots = document.createElement('div');
-    dots.className = 'day-events';
+    const dateNum = i - startDay + 1;
+    if (dateNum > 0 && dateNum <= daysInMonth) {
+      const date = new Date(year, month, dateNum);
+      const dateStr = formatDate(date);
+      dayNum.textContent = dateNum;
 
-    // Events, Birthdays, Feiertage Punkte
-    const dayEvents = events.filter(e => isSameDay(e.date, date));
-    const hasBirthday = dayEvents.some(e => e.type === 'birthday');
-    const hasEvent = dayEvents.some(e => e.type === 'event');
-    const hasHoliday = !!holiday;
+      const monthDayKey = `${String(month + 1).padStart(2, "0")}-${String(dateNum).padStart(2, "0")}`;
+      const holiday = holidays[monthDayKey];
 
-    if (hasEvent) dots.appendChild(makeDot('event'));
-    if (hasBirthday) dots.appendChild(makeDot('birthday'));
-    if (hasHoliday && isToday) dots.appendChild(makeDot('holiday'));
-    else if (hasHoliday && !isToday) number.classList.add('holiday');
+      const dayEvents = getEventsForDate(dateStr);
 
-    cell.appendChild(number);
-    cell.appendChild(dots);
-    cell.addEventListener('click', () => openModal(date, holiday?.name));
+      const dots = document.createElement("div");
+      dots.className = "day-events";
+
+      // Feiertag?
+      if (holiday) {
+        if (dateStr === todayStr) {
+          const redDot = document.createElement("div");
+          redDot.className = "day-dot holiday";
+          dots.appendChild(redDot);
+        } else {
+          dayNum.classList.add("holiday");
+        }
+      }
+
+      // Heute?
+      if (dateStr === todayStr) {
+        dayNum.classList.add("today");
+      }
+
+      // Events / Birthdays
+      let hasEvent = false, hasBirthday = false;
+      dayEvents.forEach(ev => {
+        if (ev.isBirthday) hasBirthday = true;
+        else hasEvent = true;
+      });
+
+      if (hasEvent) {
+        const dot = document.createElement("div");
+        dot.className = "day-dot event";
+        dots.appendChild(dot);
+      }
+      if (hasBirthday) {
+        const dot = document.createElement("div");
+        dot.className = "day-dot birthday";
+        dots.appendChild(dot);
+      }
+
+      cell.addEventListener("click", () => openModal(dateStr));
+      cell.appendChild(dayNum);
+      cell.appendChild(dots);
+    }
     grid.appendChild(cell);
   }
 }
 
-function makeDot(type) {
-  const dot = document.createElement('div');
-  dot.className = `day-dot ${type}`;
-  return dot;
-}
-
-function isSameDay(a, b) {
-  const da = new Date(a);
-  return da.getFullYear() === b.getFullYear() &&
-         da.getMonth() === b.getMonth() &&
-         da.getDate() === b.getDate();
-}
-
-// === Week View ===
-function renderWeek() {
-  const container = document.querySelector('.week-grid');
-  container.innerHTML = '';
-  const title = document.querySelector('.title');
-
-  const start = new Date(currentDate);
-  start.setDate(start.getDate() - start.getDay() + 1);
-  const end = new Date(start);
-  end.setDate(start.getDate() + 6);
-  title.textContent = `Woche ${start.toLocaleDateString()} - ${end.toLocaleDateString()}`;
-
-  const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
-
-  hours.forEach(h => {
-    const label = document.createElement('div');
-    label.className = 'hour-label';
-    label.textContent = h;
-    container.appendChild(label);
-
-    for (let i = 0; i < 7; i++) {
-      const cell = document.createElement('div');
-      cell.className = 'hour-cell';
-      const date = new Date(start);
-      date.setDate(start.getDate() + i);
-
-      const dayEvents = events.filter(e => isSameDay(e.date, date));
-      const holidays = getGermanHolidays(date.getFullYear());
-      const holiday = holidays.find(hh => isSameDay(hh.date, date));
-
-      if (holiday && h === '00:00') {
-        const ev = document.createElement('div');
-        ev.className = 'event holiday';
-        ev.textContent = holiday.name;
-        cell.appendChild(ev);
-      }
-
-      dayEvents.forEach(e => {
-        const ev = document.createElement('div');
-        ev.className = `event ${e.type}`;
-        ev.textContent = e.title;
-        cell.appendChild(ev);
-      });
-      container.appendChild(cell);
-    }
-  });
-}
-
-// === Day View ===
+// -------------------- DAY VIEW --------------------
 function renderDay() {
-  const container = document.querySelector('.day-column');
-  container.innerHTML = '';
-  const title = document.querySelector('.title');
+  const view = views.day;
+  view.innerHTML = "";
+  const dateStr = formatDate(currentDate);
 
-  const date = new Date(currentDate);
-  title.textContent = date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const header = document.createElement("h3");
+  header.textContent = currentDate.toDateString();
+  view.appendChild(header);
 
-  const holidays = getGermanHolidays(date.getFullYear());
-  const holiday = holidays.find(h => isSameDay(h.date, date));
-  const dayEvents = events.filter(e => isSameDay(e.date, date));
+  const hours = document.createElement("div");
+  hours.className = "day-column";
 
-  const hours = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
-  hours.forEach(h => {
-    const cell = document.createElement('div');
-    cell.className = 'day-hour';
+  for (let h = 0; h < 24; h++) {
+    const hourDiv = document.createElement("div");
+    hourDiv.className = "day-hour";
+    hourDiv.textContent = `${String(h).padStart(2, "0")}:00`;
 
-    if (holiday && h === '00:00') {
-      const ev = document.createElement('div');
-      ev.className = 'event holiday';
-      ev.textContent = holiday.name;
-      cell.appendChild(ev);
-    }
-
-    dayEvents.forEach(e => {
-      const ev = document.createElement('div');
-      ev.className = `event ${e.type}`;
-      ev.textContent = e.title;
-      cell.appendChild(ev);
+    getEventsForDate(dateStr).forEach(ev => {
+      if ((ev.hour === h) || (!ev.hour && ev.isBirthday)) {
+        const el = document.createElement("div");
+        el.className = "event " + (ev.isBirthday ? "birthday" : "event");
+        el.textContent = ev.text;
+        hourDiv.appendChild(el);
+      }
     });
-
-    container.appendChild(cell);
-  });
+    hours.appendChild(hourDiv);
+  }
+  view.appendChild(hours);
 }
 
-// === Year View ===
+// -------------------- WEEK VIEW --------------------
+function renderWeek() {
+  const view = views.week;
+  view.innerHTML = "";
+  const startOfWeek = getMonday(currentDate);
+
+  const grid = document.createElement("div");
+  grid.className = "week-grid";
+
+  for (let h = 0; h < 24; h++) {
+    const label = document.createElement("div");
+    label.className = "hour-label";
+    label.textContent = `${String(h).padStart(2, "0")}:00`;
+    grid.appendChild(label);
+
+    for (let d = 0; d < 7; d++) {
+      const cell = document.createElement("div");
+      cell.className = "hour-cell";
+      const date = new Date(startOfWeek);
+      date.setDate(date.getDate() + d);
+      const dateStr = formatDate(date);
+
+      getEventsForDate(dateStr).forEach(ev => {
+        if ((ev.hour === h) || (!ev.hour && ev.isBirthday)) {
+          const el = document.createElement("div");
+          el.className = "event " + (ev.isBirthday ? "birthday" : "event");
+          el.textContent = ev.text;
+          cell.appendChild(el);
+        }
+      });
+
+      grid.appendChild(cell);
+    }
+  }
+
+  view.appendChild(grid);
+}
+
+// -------------------- YEAR VIEW --------------------
 function renderYear() {
-  const grid = document.querySelector('.year-grid');
-  grid.innerHTML = '';
-  const title = document.querySelector('.title');
+  const view = views.year;
+  view.innerHTML = "";
+
   const year = currentDate.getFullYear();
-  title.textContent = `${year}`;
-  const holidays = getGermanHolidays(year);
+  const grid = document.createElement("div");
+  grid.className = "year-grid";
 
   for (let m = 0; m < 12; m++) {
-    const monthDiv = document.createElement('div');
-    monthDiv.className = 'year-month';
-    const label = document.createElement('strong');
-    label.textContent = new Date(year, m, 1).toLocaleString('de-DE', { month: 'long' });
-    monthDiv.appendChild(label);
+    const monthBox = document.createElement("div");
+    monthBox.className = "year-month";
 
-    const days = new Date(year, m + 1, 0).getDate();
-    const wrap = document.createElement('div');
+    const strong = document.createElement("strong");
+    strong.textContent = new Date(year, m).toLocaleString(undefined, { month: "long" });
+    monthBox.appendChild(strong);
 
-    for (let d = 1; d <= days; d++) {
-      const date = new Date(year, m, d);
-      const span = document.createElement('span');
-      const holiday = holidays.find(h => isSameDay(h.date, date));
-      if (holiday) span.classList.add('holiday');
-      span.textContent = d + ' ';
-      wrap.appendChild(span);
+    const daysInMonth = new Date(year, m + 1, 0).getDate();
+    const ul = document.createElement("ul");
+    for (let d = 1; d <= daysInMonth; d++) {
+      const li = document.createElement("li");
+      const mdKey = `${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      if (holidays[mdKey]) li.classList.add("holiday");
+      li.textContent = d;
+      ul.appendChild(li);
     }
-    monthDiv.appendChild(wrap);
-    grid.appendChild(monthDiv);
-  }
-}
-
-// === Modal ===
-function openModal(date, holidayName) {
-  const modal = document.querySelector('.modal');
-  modal.classList.remove('hidden');
-  document.getElementById('event-date').value = date.toISOString().split('T')[0];
-  document.getElementById('event-title').value = holidayName || '';
-  document.getElementById('event-type').value = holidayName ? 'holiday' : 'event';
-  document.getElementById('event-type').disabled = !!holidayName;
-  document.getElementById('event-time').disabled = document.getElementById('event-type').value === 'birthday';
-}
-
-document.getElementById('event-type').addEventListener('change', e => {
-  document.getElementById('event-time').disabled = e.target.value === 'birthday';
-});
-
-document.querySelector('.btn.save').addEventListener('click', () => {
-  const title = document.getElementById('event-title').value.trim();
-  const date = document.getElementById('event-date').value;
-  const type = document.getElementById('event-type').value;
-
-  if (!title || !date) return;
-
-  const newEvent = { title, date, type };
-  if (type === 'birthday') {
-    // Automatisch jedes Jahr (Schaltjahr beachten)
-    const base = new Date(date);
-    for (let y = base.getFullYear(); y < base.getFullYear() + 50; y++) {
-      let d = new Date(y, base.getMonth(), base.getDate());
-      if (base.getMonth() === 1 && base.getDate() === 29 && d.getDate() !== 29) {
-        d = new Date(y, 1, 28);
-      }
-      events.push({ title, date: d.toISOString(), type });
-    }
-  } else {
-    events.push(newEvent);
+    monthBox.appendChild(ul);
+    grid.appendChild(monthBox);
   }
 
-  localStorage.setItem('events', JSON.stringify(events));
-  document.querySelector('.modal').classList.add('hidden');
-  switchView(currentView);
+  view.appendChild(grid);
+}
+
+// Hilfsfunktionen
+function getEventsForDate(dateStr) {
+  const [y,m,d] = dateStr.split("-").map(Number);
+  return events.filter(ev => {
+    if (ev.date === dateStr) return true;
+    if (ev.yearly) {
+      let [ey,em,ed] = ev.date.split("-").map(Number);
+      if (em === m && ed === d) return true;
+      // Schaltjahr-Logik
+      if (em === 2 && ed === 29 && m === 2 && d === 28 && !isLeapYear(y)) return true;
+    }
+    return false;
+  });
+}
+
+function getMonday(date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - (day === 0 ? 6 : day - 1);
+  return new Date(d.setDate(diff));
+}
+
+function isLeapYear(y){return (y%4===0 && y%100!==0)||y%400===0;}
+function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+
+// Navigation
+prevBtn.onclick=()=>{changeDate(-1);}
+nextBtn.onclick=()=>{changeDate(1);}
+todayBtn.onclick=()=>{currentDate=new Date();render();}
+
+function changeDate(step){
+  switch(currentView){
+    case"day":currentDate.setDate(currentDate.getDate()+step);break;
+    case"week":currentDate.setDate(currentDate.getDate()+step*7);break;
+    case"month":currentDate.setMonth(currentDate.getMonth()+step);break;
+    case"year":currentDate.setFullYear(currentDate.getFullYear()+step);break;
+  }
+  render();
+}
+
+navBtns.forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    navBtns.forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    currentView=btn.dataset.view;
+    render();
+  });
 });
 
-document.querySelector('.btn.cancel').addEventListener('click', () => {
-  document.querySelector('.modal').classList.add('hidden');
-});
-
-// Initial Render
-switchView('month');
+// Initial render
+render();
