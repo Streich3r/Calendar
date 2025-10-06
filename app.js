@@ -1,360 +1,314 @@
-const views = {
-  day: document.getElementById("dayView"),
-  week: document.getElementById("weekView"),
-  month: document.getElementById("monthView"),
-  year: document.getElementById("yearView")
-};
-const titleEl = document.getElementById("title");
-const subtitleEl = document.getElementById("subtitle");
-const navBtns = document.querySelectorAll(".nav-btn");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const todayBtn = document.getElementById("todayBtn");
+const $ = id => document.getElementById(id);
 
-const modal = document.getElementById("eventModal");
-const modalDate = document.getElementById("modalDate");
-const eventList = document.getElementById("eventList");
-const eventInput = document.getElementById("eventInput");
-const eventHourCheckbox = document.getElementById("eventHourCheckbox");
-const eventHour = document.getElementById("eventHour");
-const birthdayCheckbox = document.getElementById("birthdayCheckbox");
-const addEventBtn = document.getElementById("addEventBtn");
-const closeModalBtn = document.getElementById("closeModalBtn");
-
-let currentView = "month";
 let currentDate = new Date();
-let events = JSON.parse(localStorage.getItem("events") || "[]");
+let currentView = 'month';
+let events = JSON.parse(localStorage.getItem('events') || '{}');
 
-// Feiertage (Deutschland Beispiel)
-const holidays = {
-  "01-01": "Neujahr",
-  "05-01": "Tag der Arbeit",
-  "10-03": "Tag der Deutschen Einheit",
-  "12-25": "1. Weihnachtstag",
-  "12-26": "2. Weihnachtstag"
+// Elements
+const views = {
+  day: $('dayView'),
+  week: $('weekView'),
+  month: $('monthView'),
+  year: $('yearView')
 };
+const calendarArea = $('calendarArea');
+const titleEl = $('title');
+const subtitleEl = $('subtitle');
+const prevBtn = $('prevBtn');
+const nextBtn = $('nextBtn');
+const todayBtn = $('todayBtn');
+const navBtns = Array.from(document.querySelectorAll('.nav-btn'));
+const modal = $('eventModal');
+const modalDate = $('modalDate');
+const eventList = $('eventList');
+const eventInput = $('eventInput');
+const addEventBtn = $('addEventBtn');
+const closeModalBtn = $('closeModalBtn');
+const eventHourCheckbox = $('eventHourCheckbox');
+const eventBirthdayCheckbox = $('eventBirthdayCheckbox');
+const eventHourSelect = $('eventHour');
 
-// Stundenoptionen
-for (let h = 0; h < 24; h++) {
-  const opt = document.createElement("option");
-  opt.value = h;
-  opt.textContent = `${String(h).padStart(2, "0")}:00`;
-  eventHour.appendChild(opt);
-}
+const pad = n => (n < 10 ? '0' : '') + n;
+function ymd(dt) { return `${dt.getFullYear()}-${dt.getMonth()+1}-${dt.getDate()}`; }
+function formatTitle(d) { return d.toLocaleDateString(undefined, { month:'long', year:'numeric' }); }
+function formatSubtitle(d){ return d.toLocaleDateString(undefined,{ weekday:'short', day:'numeric', month:'short'}); }
 
-// Uhrzeit aktivieren/deaktivieren
-eventHourCheckbox.addEventListener("change", () => {
-  eventHour.disabled = !eventHourCheckbox.checked;
-});
-
-// Modal öffnen
-function openModal(dateStr) {
-  modal.classList.remove("hidden");
-  modal.setAttribute("aria-hidden", "false");
-  modalDate.textContent = dateStr;
-  eventInput.value = "";
-  eventHourCheckbox.checked = false;
-  eventHour.disabled = true;
-  birthdayCheckbox.checked = false;
-  renderEventList(dateStr);
-}
-
-// Modal schließen
-function closeModal() {
-  modal.classList.add("hidden");
-  modal.setAttribute("aria-hidden", "true");
-}
-
-// Event hinzufügen
-addEventBtn.addEventListener("click", () => {
-  const text = eventInput.value.trim();
-  if (!text) return;
-  const dateStr = modalDate.textContent;
-  const atHour = eventHourCheckbox.checked;
-  const hour = atHour ? parseInt(eventHour.value) : null;
-  const isBirthday = birthdayCheckbox.checked;
-
-  const event = { date: dateStr, text, hour, isBirthday };
-
-  // Geburtstage sollen jährlich wiederholt werden
-  if (isBirthday) event.yearly = true;
-
-  events.push(event);
-  saveEvents();
-  closeModal();
+function setView(v) {
+  currentView = v;
+  Object.values(views).forEach(el => { el.classList.remove('active'); el.setAttribute('aria-hidden','true'); });
+  views[v].classList.add('active');
+  views[v].setAttribute('aria-hidden','false');
+  navBtns.forEach(b=>{
+    b.classList.toggle('active',b.dataset.view===v);
+    b.setAttribute('aria-pressed', b.dataset.view===v ? 'true':'false');
+  });
   render();
-});
-
-closeModalBtn.addEventListener("click", closeModal);
-
-function saveEvents() {
-  localStorage.setItem("events", JSON.stringify(events));
 }
 
-// Kalender neu rendern
 function render() {
-  updateTitle();
-  for (let key in views) views[key].classList.remove("active");
-  views[currentView].classList.add("active");
-  views[currentView].setAttribute("aria-hidden", "false");
+  titleEl.textContent = currentView==='year' ? currentDate.getFullYear() : formatTitle(currentDate);
+  subtitleEl.textContent = currentView==='month' ? '' : (currentView==='day'?formatSubtitle(currentDate):'');
+  if (currentView==='month') renderMonth();
+  else if (currentView==='week') renderWeek();
+  else if (currentView==='day') renderDay();
+  else renderYear();
+  adjustRowHeight();
+}
 
-  switch (currentView) {
-    case "day": renderDay(); break;
-    case "week": renderWeek(); break;
-    case "month": renderMonth(); break;
-    case "year": renderYear(); break;
+/* Feiertage */
+function germanHolidays(year) {
+  const dates=[[1,1,"Neujahr"],[5,1,"Tag der Arbeit"],[10,3,"Tag der Deutschen Einheit"],[12,25,"1. Weihnachtstag"],[12,26,"2. Weihnachtstag"]];
+  const easter=calcEaster(year);
+  const add=(offset,label)=>{const d=new Date(easter);d.setDate(d.getDate()+offset);dates.push([d.getMonth()+1,d.getDate(),label]);};
+  add(1,"Ostermontag"); add(39,"Christi Himmelfahrt"); add(50,"Pfingstmontag"); add(60,"Fronleichnam");
+  return dates.map(([m,d,l])=>({date:`${year}-${m}-${d}`,label:l}));
+}
+function calcEaster(y){
+  const f=Math.floor,a=y%19,b=f(y/100),c=y%100,d=f(b/4),e=b%4;
+  const g=f((8*b+13)/25),h=(19*a+b-d-g+15)%30,i=f(c/4),k=c%4;
+  const l=(32+2*e+2*i-h-k)%7,m=f((a+11*h+22*l)/451);
+  const month=f((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+  return new Date(y,month-1,day);
+}
+
+/* MONTH */
+function renderMonth(){
+  const y=currentDate.getFullYear(), m=currentDate.getMonth();
+  const first=new Date(y,m,1);
+  const firstDayIndex=(first.getDay()+6)%7;
+  const lastDate=new Date(y,m+1,0).getDate();
+  const holidays=germanHolidays(y);
+
+  const weekdays=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let html=`<div class="weekdays">${weekdays.map(w=>`<div>${w}</div>`).join('')}</div><div class="month-grid">`;
+
+  for(let i=0;i<firstDayIndex;i++) html+=`<div class="day-cell empty"></div>`;
+  for(let d=1;d<=lastDate;d++){
+    const dt=new Date(y,m,d);
+    const ds=`${y}-${m+1}-${d}`;
+    const isToday = dt.toDateString()===new Date().toDateString();
+    const holiday=holidays.find(h=>h.date===ds);
+    const dayEvents=events[ds]||[];
+    const hasNormal=dayEvents.some(ev=>!ev.birthday);
+    const hasBirthday=dayEvents.some(ev=>ev.birthday);
+
+    let dots='';
+    if(holiday && !isToday) dots+=`<div class="day-dot holiday"></div>`;
+    if(hasNormal) dots+=`<div class="day-dot event"></div>`;
+    if(hasBirthday) dots+=`<div class="day-dot birthday"></div>`;
+    if(holiday && isToday) dots+=`<div class="day-dot holiday"></div>`;
+
+    const holidayClass=holiday && !isToday?'holiday':'';
+    html+=`<div class="day-cell${holidayClass?' holiday':''}" data-date="${ds}" ${holiday?`title="${holiday.label}"`:''}>
+      <div class="day-number ${isToday?'today':''}">${d}</div>
+      <div class="day-events">${dots}</div>
+    </div>`;
   }
+  const total=firstDayIndex+lastDate, rem=(7-(total%7))%7;
+  for(let i=0;i<rem;i++) html+=`<div class="day-cell empty"></div>`;
+  html+='</div>';
+  views.month.innerHTML=html;
+  document.querySelectorAll('.day-cell[data-date]').forEach(c=>c.addEventListener('click',()=>openModal(c.dataset.date)));
 }
 
-// Titel aktualisieren
-function updateTitle() {
-  const options = { month: "long", year: "numeric" };
-  titleEl.textContent = currentDate.toLocaleDateString(undefined, options);
-  subtitleEl.textContent = "";
-}
-
-// -------------------- MONTH VIEW --------------------
-function renderMonth() {
-  const view = views.month;
-  view.innerHTML = "";
-
-  const now = new Date();
-  const month = currentDate.getMonth();
-  const year = currentDate.getFullYear();
-
-  const firstDay = new Date(year, month, 1);
-  const startDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const weekdays = document.createElement("div");
-  weekdays.className = "weekdays";
-  ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d => {
-    const el = document.createElement("div");
-    el.textContent = d;
-    weekdays.appendChild(el);
-  });
-  view.appendChild(weekdays);
-
-  const grid = document.createElement("div");
-  grid.className = "month-grid";
-  view.appendChild(grid);
-
-  const totalCells = Math.ceil((daysInMonth + startDay) / 7) * 7;
-  const todayStr = formatDate(now);
-
-  for (let i = 0; i < totalCells; i++) {
-    const cell = document.createElement("div");
-    cell.className = "day-cell";
-
-    const dayNum = document.createElement("div");
-    dayNum.className = "day-number";
-
-    const dateNum = i - startDay + 1;
-    if (dateNum > 0 && dateNum <= daysInMonth) {
-      const date = new Date(year, month, dateNum);
-      const dateStr = formatDate(date);
-      dayNum.textContent = dateNum;
-
-      const monthDayKey = `${String(month + 1).padStart(2, "0")}-${String(dateNum).padStart(2, "0")}`;
-      const holiday = holidays[monthDayKey];
-
-      const dayEvents = getEventsForDate(dateStr);
-
-      const dots = document.createElement("div");
-      dots.className = "day-events";
-
-      // Feiertag?
-      if (holiday) {
-        if (dateStr === todayStr) {
-          const redDot = document.createElement("div");
-          redDot.className = "day-dot holiday";
-          dots.appendChild(redDot);
-        } else {
-          dayNum.classList.add("holiday");
-        }
-      }
-
-      // Heute?
-      if (dateStr === todayStr) {
-        dayNum.classList.add("today");
-      }
-
-      // Events / Birthdays
-      let hasEvent = false, hasBirthday = false;
-      dayEvents.forEach(ev => {
-        if (ev.isBirthday) hasBirthday = true;
-        else hasEvent = true;
-      });
-
-      if (hasEvent) {
-        const dot = document.createElement("div");
-        dot.className = "day-dot event";
-        dots.appendChild(dot);
-      }
-      if (hasBirthday) {
-        const dot = document.createElement("div");
-        dot.className = "day-dot birthday";
-        dots.appendChild(dot);
-      }
-
-      cell.addEventListener("click", () => openModal(dateStr));
-      cell.appendChild(dayNum);
-      cell.appendChild(dots);
+/* WEEK */
+function renderWeek(){
+  const start=new Date(currentDate);
+  const dayIndex=(start.getDay()+6)%7;
+  start.setDate(start.getDate()-dayIndex);
+  let html=`<div class="week-grid"><div></div>`;
+  const days=[];
+  for(let i=0;i<7;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    days.push(d);
+    html+=`<div style="text-align:center;border-bottom:1px solid #2b2b2b;padding:6px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]}<br>${d.getDate()}</div>`;
+  }
+  for(let h=0;h<24;h++){
+    html+=`<div class="hour-label">${pad(h)}:00</div>`;
+    for(let i=0;i<7;i++){
+      const d=days[i], ds=`${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+      html+=`<div class="hour-cell" data-date="${ds}" data-hour="${h}"></div>`;
     }
-    grid.appendChild(cell);
   }
-}
+  html+=`</div>`;
+  views.week.innerHTML=html;
 
-// -------------------- DAY VIEW --------------------
-function renderDay() {
-  const view = views.day;
-  view.innerHTML = "";
-  const dateStr = formatDate(currentDate);
-
-  const header = document.createElement("h3");
-  header.textContent = currentDate.toDateString();
-  view.appendChild(header);
-
-  const hours = document.createElement("div");
-  hours.className = "day-column";
-
-  for (let h = 0; h < 24; h++) {
-    const hourDiv = document.createElement("div");
-    hourDiv.className = "day-hour";
-    hourDiv.textContent = `${String(h).padStart(2, "0")}:00`;
-
-    getEventsForDate(dateStr).forEach(ev => {
-      if ((ev.hour === h) || (!ev.hour && ev.isBirthday)) {
-        const el = document.createElement("div");
-        el.className = "event " + (ev.isBirthday ? "birthday" : "event");
-        el.textContent = ev.text;
-        hourDiv.appendChild(el);
-      }
+  const y=currentDate.getFullYear();
+  const holidays=germanHolidays(y);
+  document.querySelectorAll('.hour-cell').forEach(cell=>{
+    const ds=cell.dataset.date;
+    const holiday=holidays.find(h=>h.date===ds);
+    const evts=events[ds]||[];
+    evts.forEach(ev=>{
+      const el=document.createElement('div');
+      el.className='event'+(ev.birthday?' birthday':'');
+      el.textContent=ev.text;
+      cell.appendChild(el);
     });
-    hours.appendChild(hourDiv);
-  }
-  view.appendChild(hours);
-}
-
-// -------------------- WEEK VIEW --------------------
-function renderWeek() {
-  const view = views.week;
-  view.innerHTML = "";
-  const startOfWeek = getMonday(currentDate);
-
-  const grid = document.createElement("div");
-  grid.className = "week-grid";
-
-  for (let h = 0; h < 24; h++) {
-    const label = document.createElement("div");
-    label.className = "hour-label";
-    label.textContent = `${String(h).padStart(2, "0")}:00`;
-    grid.appendChild(label);
-
-    for (let d = 0; d < 7; d++) {
-      const cell = document.createElement("div");
-      cell.className = "hour-cell";
-      const date = new Date(startOfWeek);
-      date.setDate(date.getDate() + d);
-      const dateStr = formatDate(date);
-
-      getEventsForDate(dateStr).forEach(ev => {
-        if ((ev.hour === h) || (!ev.hour && ev.isBirthday)) {
-          const el = document.createElement("div");
-          el.className = "event " + (ev.isBirthday ? "birthday" : "event");
-          el.textContent = ev.text;
-          cell.appendChild(el);
-        }
-      });
-
-      grid.appendChild(cell);
+    if(holiday){
+      const el=document.createElement('div');
+      el.className='event holiday';
+      el.textContent=holiday.label;
+      cell.appendChild(el);
     }
-  }
-
-  view.appendChild(grid);
-}
-
-// -------------------- YEAR VIEW --------------------
-function renderYear() {
-  const view = views.year;
-  view.innerHTML = "";
-
-  const year = currentDate.getFullYear();
-  const grid = document.createElement("div");
-  grid.className = "year-grid";
-
-  for (let m = 0; m < 12; m++) {
-    const monthBox = document.createElement("div");
-    monthBox.className = "year-month";
-
-    const strong = document.createElement("strong");
-    strong.textContent = new Date(year, m).toLocaleString(undefined, { month: "long" });
-    monthBox.appendChild(strong);
-
-    const daysInMonth = new Date(year, m + 1, 0).getDate();
-    const ul = document.createElement("ul");
-    for (let d = 1; d <= daysInMonth; d++) {
-      const li = document.createElement("li");
-      const mdKey = `${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      if (holidays[mdKey]) li.classList.add("holiday");
-      li.textContent = d;
-      ul.appendChild(li);
-    }
-    monthBox.appendChild(ul);
-    grid.appendChild(monthBox);
-  }
-
-  view.appendChild(grid);
-}
-
-// Hilfsfunktionen
-function getEventsForDate(dateStr) {
-  const [y,m,d] = dateStr.split("-").map(Number);
-  return events.filter(ev => {
-    if (ev.date === dateStr) return true;
-    if (ev.yearly) {
-      let [ey,em,ed] = ev.date.split("-").map(Number);
-      if (em === m && ed === d) return true;
-      // Schaltjahr-Logik
-      if (em === 2 && ed === 29 && m === 2 && d === 28 && !isLeapYear(y)) return true;
-    }
-    return false;
+    cell.addEventListener('click',()=>openModal(ds,parseInt(cell.dataset.hour,10)));
   });
 }
 
-function getMonday(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - (day === 0 ? 6 : day - 1);
-  return new Date(d.setDate(diff));
+/* DAY */
+function renderDay(){
+  const y=currentDate.getFullYear(), m=currentDate.getMonth(), d=currentDate.getDate();
+  const ds=`${y}-${m+1}-${d}`;
+  const yHols=germanHolidays(y);
+  let html=`<div style="display:grid;grid-template-columns:60px 1fr">`;
+  for(let h=0;h<24;h++){
+    html+=`<div class="hour-label">${pad(h)}:00</div><div class="day-hour" data-date="${ds}" data-hour="${h}"></div>`;
+  }
+  html+=`</div>`;
+  views.day.innerHTML=html;
+
+  const holiday=yHols.find(h=>h.date===ds);
+  if(holiday){
+    const el=document.createElement('div');
+    el.className='event holiday';
+    el.textContent=holiday.label;
+    document.querySelector(`.day-hour[data-hour="0"]`).appendChild(el);
+  }
+  (events[ds]||[]).forEach(ev=>{
+    const cell=document.querySelector(`.day-hour[data-hour="${ev.hour||0}"]`);
+    if(cell){
+      const el=document.createElement('div');
+      el.className='event'+(ev.birthday?' birthday':'');
+      el.textContent=ev.text;
+      cell.appendChild(el);
+    }
+  });
+  document.querySelectorAll('.day-hour').forEach(c=>c.addEventListener('click',()=>openModal(ds,parseInt(c.dataset.hour,10))));
 }
 
-function isLeapYear(y){return (y%4===0 && y%100!==0)||y%400===0;}
-function formatDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
-
-// Navigation
-prevBtn.onclick=()=>{changeDate(-1);}
-nextBtn.onclick=()=>{changeDate(1);}
-todayBtn.onclick=()=>{currentDate=new Date();render();}
-
-function changeDate(step){
-  switch(currentView){
-    case"day":currentDate.setDate(currentDate.getDate()+step);break;
-    case"week":currentDate.setDate(currentDate.getDate()+step*7);break;
-    case"month":currentDate.setMonth(currentDate.getMonth()+step);break;
-    case"year":currentDate.setFullYear(currentDate.getFullYear()+step);break;
+/* YEAR */
+function renderYear(){
+  const y=currentDate.getFullYear();
+  let html=`<div class="year-grid">`;
+  for(let m=0;m<12;m++){
+    const mn=new Date(y,m,1).toLocaleString(undefined,{month:'long'});
+    html+=`<div class="year-month" data-month="${m}" data-year="${y}">
+      <strong>${mn}</strong>
+      <div style="font-size:12px;margin-top:6px">${renderMiniMonth(y,m)}</div>
+    </div>`;
   }
+  html+='</div>';
+  views.year.innerHTML=html;
+  document.querySelectorAll('.year-month').forEach(el=>{
+    el.addEventListener('click',()=>{
+      currentDate=new Date(parseInt(el.dataset.year,10),parseInt(el.dataset.month,10),1);
+      setView('month');
+    });
+  });
+}
+function renderMiniMonth(y,m){
+  const first=new Date(y,m,1), firstIdx=(first.getDay()+6)%7, last=new Date(y,m+1,0).getDate();
+  const holidays=germanHolidays(y);
+  let mini='<div style="display:grid;grid-template-columns:repeat(7,1fr);font-size:11px">';
+  for(let i=0;i<firstIdx;i++) mini+='<div></div>';
+  for(let d=1;d<=last;d++){
+    const ds=`${y}-${m+1}-${d}`, hol=holidays.find(h=>h.date===ds);
+    const dayEv=events[ds]||[];
+    const hasE=dayEv.some(e=>!e.birthday), hasB=dayEv.some(e=>e.birthday);
+    let dots='';
+    if(hasE) dots+=`<div class="day-dot event" style="width:4px;height:4px;position:absolute;bottom:1px;"></div>`;
+    if(hasB) dots+=`<div class="day-dot birthday" style="width:4px;height:4px;position:absolute;bottom:1px;left:8px;"></div>`;
+    mini+=`<div style="position:relative;${hol?'color:#e84545;font-weight:bold;':''}" title="${hol?hol.label:''}">${d}${dots}</div>`;
+  }
+  mini+='</div>'; return mini;
+}
+
+/* Modal */
+let modalOpenFor=null;
+function openModal(dateStr,hour){
+  modalOpenFor={date:dateStr,hour:hour};
+  modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
+  modalDate.textContent=new Date(dateStr).toDateString()+(hour!==undefined?` ${pad(hour)}:00`:'');
+  eventInput.value=''; renderEventList(dateStr);
+  eventHourSelect.innerHTML=''; for(let h=0;h<24;h++){const o=document.createElement('option');o.value=h;o.text=`${pad(h)}:00`;eventHourSelect.appendChild(o);}
+  eventHourCheckbox.checked=hour!==undefined; eventHourSelect.disabled=!eventHourCheckbox.checked;
+  eventBirthdayCheckbox.checked=false;
+}
+
+function renderEventList(dateStr){
+  eventList.innerHTML='';
+  const [y]=dateStr.split('-').map(Number);
+  const holiday=germanHolidays(y).find(h=>h.date===dateStr);
+  if(holiday){
+    const li=document.createElement('li'); li.textContent=holiday.label; li.style.color='#e84545'; li.style.fontWeight='bold';
+    eventList.appendChild(li);
+  }
+  (events[dateStr]||[]).forEach((e,i)=>{
+    const li=document.createElement('li');
+    li.textContent=(e.hour!==undefined?`${pad(e.hour)}:00 — `:'')+e.text+(e.birthday?' 🎂':'');
+    const del=document.createElement('button');
+    del.textContent='Delete';
+    del.style.cssText='float:right;background:#900;color:#fff;border:none;padding:4px 6px;border-radius:4px';
+    del.onclick=()=>{events[dateStr].splice(i,1);if(!events[dateStr].length)delete events[dateStr];
+      localStorage.setItem('events',JSON.stringify(events));renderEventList(dateStr);render();};
+    li.appendChild(del);eventList.appendChild(li);
+  });
+}
+
+addEventBtn.onclick=()=>{
+  const txt=eventInput.value.trim(); if(!txt)return alert('Enter event text');
+  const dateStr=modalOpenFor.date;
+  if(!events[dateStr]) events[dateStr]=[];
+  const ev={text:txt};
+  if(eventBirthdayCheckbox.checked){
+    ev.birthday=true;
+    const [y,m,d]=dateStr.split('-').map(Number);
+    for(let i=y+1;i<=y+50;i++){
+      let ny=i,nm=m,nd=d;
+      if(nm===2&&nd===29&&!isLeap(i)) nd=28;
+      const ds=`${ny}-${nm}-${nd}`;
+      if(!events[ds]) events[ds]=[];
+      events[ds].push({...ev});
+    }
+  } else if(eventHourCheckbox.checked) {
+    ev.hour=parseInt(eventHourSelect.value,10);
+  }
+  events[dateStr].push(ev);
+  localStorage.setItem('events',JSON.stringify(events));
+  modal.classList.add('hidden'); render();
+};
+function isLeap(y){return(y%4===0&&y%100!==0)||y%400===0;}
+closeModalBtn.onclick=()=>{modal.classList.add('hidden');};
+
+/* Navigation */
+navBtns.forEach(b=>b.onclick=()=>setView(b.dataset.view));
+todayBtn.onclick=()=>{currentDate=new Date();setView('month');};
+prevBtn.onclick=()=>change(-1); nextBtn.onclick=()=>change(1);
+function change(dir){
+  if(currentView==='day') currentDate.setDate(currentDate.getDate()+dir);
+  else if(currentView==='week') currentDate.setDate(currentDate.getDate()+7*dir);
+  else if(currentView==='month') currentDate.setMonth(currentDate.getMonth()+dir);
+  else currentDate.setFullYear(currentDate.getFullYear()+dir);
   render();
 }
 
-navBtns.forEach(btn=>{
-  btn.addEventListener("click",()=>{
-    navBtns.forEach(b=>b.classList.remove("active"));
-    btn.classList.add("active");
-    currentView=btn.dataset.view;
-    render();
-  });
-});
+/* Swipe */
+let startX=0;
+calendarArea.addEventListener('touchstart',e=>startX=e.changedTouches[0].screenX,{passive:true});
+calendarArea.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].screenX-startX;
+  if(Math.abs(dx)>60){dx>0?change(-1):change(1);}
+},{passive:true});
 
-// Initial render
-render();
+/* Row height */
+function adjustRowHeight(){
+  const footer=document.querySelector('.footer');
+  const avail=window.innerHeight-(footer?footer.getBoundingClientRect().height:0);
+  const weekdays=document.querySelector('.weekdays');
+  const h=weekdays?weekdays.getBoundingClientRect().height:0;
+  const rows=6;
+  const rh=Math.max(60,Math.floor((avail-h-8)/rows));
+  document.documentElement.style.setProperty('--row-height',rh+'px');
+}
+window.addEventListener('resize',adjustRowHeight);
+setView('month');
