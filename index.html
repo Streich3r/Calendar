@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Calendar</title>
   <meta name="theme-color" content="#0b0d12">
-
-  <link rel="stylesheet" href="styles.css?v=7">
+  <link rel="stylesheet" href="styles.css?v=8">
   <link rel="manifest" href="manifest.json">
-
   <link rel="icon" type="image/png" href="icon-512.png">
   <link rel="apple-touch-icon" href="icon-512.png">
   <meta name="msapplication-TileImage" content="icon-512.png">
@@ -61,7 +59,8 @@
         <label>
           <input id="eventHourCheckbox" type="checkbox" /> At hour
         </label>
-        <select id="eventHour" aria-label="Select hour" disabled></select>
+        <select id="eventHour" aria-label="Select hour" disabled>
+        </select>
       </div>
 
       <div class="modal-actions">
@@ -71,10 +70,10 @@
     </div>
   </div>
 
-  <script src="app.js?v=7" defer></script>
+  <script src="app.js?v=8" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(()=>{/* sw fail ok */});
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
     }
   </script>
 </body>
