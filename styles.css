@@ -33,7 +33,6 @@ html, body {
   padding: 8px;
   box-sizing: border-box;
   height: calc(100vh - var(--footer-height));
-  overflow: hidden;
 }
 .view.active { display: block; }
 
@@ -159,6 +158,19 @@ html, body {
   padding: 2px;
   overflow: hidden;
 }
+.all-day-label {
+  background: var(--panel);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 12px;
+  border-right: 1px solid #2b2b2b;
+}
+.all-day-cell {
+  height: 40px;
+  border: 1px solid var(--cell-border);
+  position: relative;
+  overflow: hidden;
+}
 .event {
   position: absolute;
   left: 4px;
@@ -176,12 +188,16 @@ html, body {
 .event.holiday { background: var(--holiday); }
 
 /* Day View */
+.day-view {
+  overflow-y: auto;
+  max-height: calc(100vh - var(--footer-height));
+}
 .day-hour {
   height: 56px;
   border: 1px solid var(--cell-border);
   position: relative;
   padding: 6px;
-  overflow: auto;
+  overflow: hidden;
 }
 .day-hour .event { position: relative; margin-bottom: 2px; }
 
@@ -201,9 +217,6 @@ html, body {
   border-radius: 6px;
   padding: 6px;
   font-size: 11px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 }
 .year-month strong { font-size: 13px; }
 .year-month .holiday { color: var(--holiday); font-weight: bold; }
