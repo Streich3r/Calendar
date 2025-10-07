@@ -18,13 +18,14 @@ html, body {
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
 }
 .app { height: 100%; display: flex; flex-direction: column; }
 .main {
   flex: 1;
   display: block;
-  overflow: hidden;
   background: linear-gradient(#202124, #151617);
+  overflow: hidden;
 }
 
 /* Views */
@@ -43,237 +44,128 @@ html, body {
   box-shadow: 0 -6px 18px rgba(0,0,0,0.4);
 }
 .switchbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid #2b2b2b;
+  display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #2b2b2b;
 }
-.title-wrap { display: flex; flex-direction: column; align-items: center; flex: 1; }
-.title { font-size: 16px; }
-.subtitle { font-size: 11px; color: var(--muted); }
-.icon-btn {
-  background: transparent;
-  border: none;
-  color: var(--text);
-  font-size: 22px;
-  padding: 8px;
-}
-.bottom-nav { display: flex; }
-.nav-btn {
-  flex: 1;
-  padding: 12px 6px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-}
-.nav-btn.active {
-  color: var(--text);
-  border-top: 3px solid var(--accent);
-}
+.title-wrap { display:flex;flex-direction:column;align-items:center;flex:1; }
+.title { font-size:16px; }
+.subtitle { font-size:11px;color:var(--muted); }
+.icon-btn { background:transparent;border:none;color:var(--text);font-size:22px;padding:8px; }
+.bottom-nav { display:flex; }
+.nav-btn { flex:1;padding:12px 6px;border:none;background:transparent;color:var(--muted);font-size:13px }
+.nav-btn.active { color:var(--text);border-top:3px solid var(--accent) }
 
 /* Month View */
 .weekdays {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  background: var(--panel);
-  color: var(--muted);
-  font-size: 12px;
-  padding: 6px 0;
-  text-align: center;
+  display:grid;grid-template-columns:repeat(7,1fr);background:var(--panel);color:var(--muted);font-size:12px;padding:6px 0;text-align:center;
 }
 .month-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:2px;
+  /* JS sets --row-height to fill available area */
   grid-auto-rows: var(--row-height, 80px);
-  gap: 2px;
+  height: calc(100% - 34px); /* leave space for weekdays header */
 }
 .day-cell {
-  background: transparent;
-  border: 1px solid var(--cell-border);
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  cursor: pointer;
-  overflow: hidden;
+  background:transparent;border:1px solid var(--cell-border);
+  padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  cursor:pointer;overflow:hidden;position:relative;
 }
 .day-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  margin-top: 4px;
-  font-weight: 500;
-  transition: all 0.2s ease;
+  display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:50%;margin-top:4px;font-weight:500;
+  transition: all 0.12s ease;
 }
 .day-number.today {
-  border: 2px solid var(--accent);
-  color: var(--accent);
+  border:2px solid var(--accent);
+  color:var(--accent);
+  background: transparent;
 }
 .day-number.holiday {
-  color: var(--holiday);
-  font-weight: bold;
+  color:var(--holiday);
+  font-weight:bold;
+  background: transparent;
 }
 .day-events {
-  margin-top: 6px;
-  display: flex;
-  gap: 4px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
+  margin-top:6px;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:nowrap;
+  min-height:10px;
 }
-.day-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-.day-dot.event { background: var(--event); }
-.day-dot.birthday { background: var(--birthday); }
-.day-dot.holiday { background: var(--holiday); }
+/* small centered dots for month/year */
+.day-dot { width:6px;height:6px;border-radius:50%;display:inline-block; }
+.day-dot.event { background:var(--event); }
+.day-dot.birthday { background:var(--birthday); }
 
-/* Week & Day View */
+/* Week & Day shared structure */
 .week-grid {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  align-items: start;
-  border-top: 1px solid #2b2b2b;
-  overflow-y: auto;
+  display:grid;
+  grid-template-columns:60px repeat(7,1fr);
+  align-items:start;
+  border-top:1px solid #2b2b2b;
+  overflow-y:auto;
   max-height: calc(100vh - var(--footer-height));
 }
 .hour-label {
-  padding: 6px 8px;
-  font-size: 11px;
-  color: var(--muted);
-  border-right: 1px solid #2b2b2b;
+  padding:6px 8px;font-size:11px;color:var(--muted);border-right:1px solid #2b2b2b;
 }
 .hour-cell {
-  height: 56px;
-  border: 1px solid var(--cell-border);
-  position: relative;
-  padding: 2px;
-  overflow: hidden;
+  min-height:56px;border:1px solid var(--cell-border);position:relative;padding:6px;overflow:hidden;
 }
+
+/* All-day row cells show badges (not absolute), multiple items visible */
 .all-day-label {
-  background: var(--panel);
-  color: var(--muted);
-  padding: 4px 8px;
-  font-size: 12px;
-  border-right: 1px solid #2b2b2b;
+  display:flex;align-items:center;justify-content:center;
+  padding:6px 8px;font-size:12px;color:var(--muted);border-right:1px solid #2b2b2b;background:var(--panel);
 }
 .all-day-cell {
-  height: 40px;
-  border: 1px solid var(--cell-border);
-  position: relative;
-  overflow: hidden;
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px;border:1px solid var(--cell-border);min-height:40px;
+  background:transparent;
 }
+.all-day-badge {
+  display:inline-flex;align-items:center;padding:4px 8px;border-radius:10px;font-size:12px;
+  color:#fff;background:var(--accent);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.all-day-badge.birthday { background:var(--birthday); }
+.all-day-badge.holiday { background:var(--holiday);color:#fff; }
+
+/* Day view specifics */
+.day-view { overflow-y:auto; max-height: calc(100vh - var(--footer-height)); display:grid; grid-template-columns:60px 1fr;}
+.day-hour { min-height:56px;border:1px solid var(--cell-border);position:relative;padding:6px;overflow:hidden; }
+.day-hour .event { position:relative;margin-bottom:4px;display:inline-block; }
+
+/* Event style */
 .event {
-  position: absolute;
-  left: 4px;
-  right: 4px;
-  background: var(--accent);
-  color: #fff;
-  padding: 4px 6px;
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display:inline-flex;align-items:center;padding:4px 6px;border-radius:6px;font-size:12px;color:#fff;background:var(--accent);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.event.birthday { background: var(--birthday); }
-.event.holiday { background: var(--holiday); }
+.event.birthday { background:var(--birthday); }
+.event.holiday { background:var(--holiday); }
 
-/* Day View */
-.day-view {
-  overflow-y: auto;
-  max-height: calc(100vh - var(--footer-height));
-}
-.day-hour {
-  height: 56px;
-  border: 1px solid var(--cell-border);
-  position: relative;
-  padding: 6px;
-  overflow: hidden;
-}
-.day-hour .event { position: relative; margin-bottom: 2px; }
-
-/* Year View */
+/* Year view */
 .year-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 6px;
-  padding: 6px;
-  overflow-y: auto;
-  height: calc(100vh - var(--footer-height));
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:6px;overflow-y:auto;
+  height:calc(100vh - var(--footer-height));overflow-x:hidden;
 }
-.year-month {
-  background: #242526;
-  border: 1px solid #2b2b2b;
-  border-radius: 6px;
-  padding: 6px;
-  font-size: 11px;
-}
-.year-month strong { font-size: 13px; }
-.year-month .holiday { color: var(--holiday); font-weight: bold; }
+.year-month { background:#242526;border:1px solid #2b2b2b;border-radius:6px;padding:6px;font-size:11px;display:flex;flex-direction:column }
+.year-month strong { font-size:13px; margin-bottom:6px; }
+.year-mini { font-size:11px; position:relative; min-height:44px; }
+
+/* mini dots bottom-centered */
+.mini-dots { position:absolute; left:50%; transform:translateX(-50%); bottom:4px; display:flex; gap:4px; }
+.mini-dot { width:4px;height:4px;border-radius:50%; }
 
 /* Modal */
-.modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.5);
-  z-index: 10;
-}
-.modal.hidden { display: none; }
-.modal-content {
-  background: var(--panel);
-  padding: 14px;
-  border-radius: 10px;
-  width: 92%;
-  max-width: 420px;
-}
-.event-list {
-  list-style: none;
-  padding: 0;
-  margin: 6px 0 0 0;
-  max-height: 220px;
-  overflow: auto;
-}
-.event-list li {
-  background: #212225;
-  padding: 6px;
-  margin: 4px 0;
-  border-radius: 6px;
-  font-size: 13px;
-}
-.modal-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
-.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
-.btn {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-}
-.btn.alt { background: #3a3b3c; }
+.modal { position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10; }
+.modal.hidden { display:none; }
+.modal-content { background:var(--panel);padding:14px;border-radius:10px;width:92%;max-width:420px; }
+.event-list { list-style:none;padding:0;margin:6px 0 0 0;max-height:220px;overflow:auto; }
+.event-list li { background:#212225;padding:6px;margin:4px 0;border-radius:6px;font-size:13px; }
+.modal-row { display:flex;gap:8px;align-items:center;margin-top:10px; }
+.modal-actions { display:flex;gap:8px;justify-content:flex-end;margin-top:12px; }
+.btn { background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:6px; }
+.btn.alt { background:#3a3b3c; }
 
-.sr-only {
-  position: absolute;
-  left: -10000px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
+.sr-only { position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden; }
 
-/* Small screens */
-@media (min-width: 700px) {
-  .month-grid { gap: 4px; }
+@media (min-width:700px) {
+  .month-grid { gap:4px; }
 }
