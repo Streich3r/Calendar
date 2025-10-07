@@ -5,23 +5,27 @@
   --accent: #1a73e8;
   --text: #e8eaed;
   --cell-border: #2c2c2c;
-  --event: #1a73e8;
+  --event: #8ab4f8;
   --birthday: #34a853;
   --holiday: #e84545;
   --footer-height: 112px;
 }
 
-/* Grundlayout */
+/* Reset & Layout */
 html, body {
   height: 100%;
   margin: 0;
   background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
-  overflow: hidden;
 }
 .app { height: 100%; display: flex; flex-direction: column; }
-.main { flex: 1; display: block; overflow: hidden; background: linear-gradient(#202124,#151617); }
+.main {
+  flex: 1;
+  display: block;
+  overflow: hidden;
+  background: linear-gradient(#202124, #151617);
+}
 
 /* Views */
 .view {
@@ -89,7 +93,7 @@ html, body {
 .day-cell {
   background: transparent;
   border: 1px solid var(--cell-border);
-  padding: 4px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -101,10 +105,10 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  margin-top: 2px;
+  margin-top: 4px;
   font-weight: 500;
   transition: all 0.2s ease;
 }
@@ -117,7 +121,7 @@ html, body {
   font-weight: bold;
 }
 .day-events {
-  margin-top: 4px;
+  margin-top: 6px;
   display: flex;
   gap: 3px;
   align-items: center;
@@ -131,15 +135,52 @@ html, body {
 }
 .day-dot.event { background: var(--event); }
 .day-dot.birthday { background: var(--birthday); }
+.day-dot.holiday { background: var(--holiday); }
 
-/* Week & Day View */
-.week-grid {
+/* Week & Day Views */
+.week-grid, .day-grid {
   display: grid;
   grid-template-columns: 60px repeat(7, 1fr);
+  align-items: start;
   border-top: 1px solid #2b2b2b;
   overflow-y: auto;
   height: calc(100vh - var(--footer-height));
 }
+.day-grid {
+  grid-template-columns: 60px 1fr;
+}
+.all-day-row {
+  display: contents;
+}
+.all-day-label {
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border-right: 1px solid #2b2b2b;
+  background: #252627;
+}
+.all-day-cell {
+  border: 1px solid var(--cell-border);
+  min-height: 40px;
+  position: relative;
+  padding: 2px;
+  overflow: hidden;
+}
+.event-bar {
+  background: var(--event);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 1px 2px;
+}
+.event-bar.birthday { background: var(--birthday); }
+.event-bar.holiday { background: var(--holiday); }
+
 .hour-label {
   padding: 6px 8px;
   font-size: 11px;
@@ -150,41 +191,24 @@ html, body {
   height: 56px;
   border: 1px solid var(--cell-border);
   position: relative;
-  overflow: hidden;
   padding: 2px;
+  overflow: hidden;
 }
 .event {
-  position: relative;
-  background: var(--event);
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: var(--accent);
   color: #fff;
-  border-radius: 4px;
-  padding: 2px 4px;
-  font-size: 11px;
-  margin: 1px 0;
-  text-overflow: ellipsis;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
-  text-align: center;
+  text-overflow: ellipsis;
 }
 .event.birthday { background: var(--birthday); }
 .event.holiday { background: var(--holiday); }
-
-/* All-Day Row */
-.all-day-row {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  background: #2a2a2a;
-  border-bottom: 1px solid #2b2b2b;
-}
-.all-day-cell {
-  min-height: 32px;
-  border: 1px solid var(--cell-border);
-  padding: 2px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
 
 /* Year View */
 .year-grid {
@@ -193,9 +217,8 @@ html, body {
   grid-template-rows: repeat(4, 1fr);
   gap: 6px;
   padding: 6px;
-  height: calc(100vh - var(--footer-height));
   overflow-y: auto;
-  overflow-x: hidden;
+  height: calc(100vh - var(--footer-height));
 }
 .year-month {
   background: #242526;
@@ -203,40 +226,22 @@ html, body {
   border-radius: 6px;
   padding: 6px;
   font-size: 11px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
-.year-month strong {
-  font-size: 13px;
-  margin-bottom: 4px;
-}
-.year-mini {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  font-size: 10px;
-  text-align: center;
-  width: 100%;
-}
-.year-mini div {
+.year-month strong { font-size: 13px; }
+.year-month .holiday { color: var(--holiday); font-weight: bold; }
+.year-day {
+  display: inline-block;
   position: relative;
-  padding: 1px;
+  margin: 2px;
 }
-.year-mini .holiday {
-  color: var(--holiday);
-  font-weight: bold;
-}
-.year-dot {
+.year-day .day-dot {
   width: 4px;
   height: 4px;
-  border-radius: 50%;
   position: absolute;
-  bottom: -4px;
+  bottom: -5px;
   left: 50%;
   transform: translateX(-50%);
 }
-.year-dot.event { background: var(--event); }
-.year-dot.birthday { background: var(--birthday); }
 
 /* Modal */
 .modal {
@@ -270,18 +275,8 @@ html, body {
   border-radius: 6px;
   font-size: 13px;
 }
-.modal-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-}
-.modal-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  margin-top: 12px;
-}
+.modal-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
 .btn {
   background: var(--accent);
   color: #fff;
@@ -291,7 +286,6 @@ html, body {
 }
 .btn.alt { background: #3a3b3c; }
 
-/* Accessibility */
 .sr-only {
   position: absolute;
   left: -10000px;
@@ -299,4 +293,9 @@ html, body {
   width: 1px;
   height: 1px;
   overflow: hidden;
+}
+
+/* Small screens */
+@media (min-width: 700px) {
+  .month-grid { gap: 4px; }
 }
