@@ -62,9 +62,8 @@ html, body {
   display:grid;
   grid-template-columns:repeat(7,1fr);
   gap:2px;
-  /* JS sets --row-height to fill available area */
   grid-auto-rows: var(--row-height, 80px);
-  height: calc(100% - 34px); /* leave space for weekdays header */
+  height: calc(100% - 34px);
 }
 .day-cell {
   background:transparent;border:1px solid var(--cell-border);
@@ -76,21 +75,13 @@ html, body {
   width:32px;height:32px;border-radius:50%;margin-top:4px;font-weight:500;
   transition: all 0.12s ease;
 }
-.day-number.today {
-  border:2px solid var(--accent);
-  color:var(--accent);
-  background: transparent;
-}
-.day-number.holiday {
-  color:var(--holiday);
-  font-weight:bold;
-  background: transparent;
-}
+.day-number.today { border:2px solid var(--accent);color:var(--accent);background:transparent; }
+.day-number.holiday { color:var(--holiday);font-weight:bold;background:transparent; }
+
 .day-events {
-  margin-top:6px;display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:nowrap;
+  margin-top:6px;display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap;
   min-height:10px;
 }
-/* small centered dots for month/year */
 .day-dot { width:6px;height:6px;border-radius:50%;display:inline-block; }
 .day-dot.event { background:var(--event); }
 .day-dot.birthday { background:var(--birthday); }
@@ -111,7 +102,6 @@ html, body {
   min-height:56px;border:1px solid var(--cell-border);position:relative;padding:6px;overflow:hidden;
 }
 
-/* All-day row cells show badges (not absolute), multiple items visible */
 .all-day-label {
   display:flex;align-items:center;justify-content:center;
   padding:6px 8px;font-size:12px;color:var(--muted);border-right:1px solid #2b2b2b;background:var(--panel);
@@ -127,12 +117,10 @@ html, body {
 .all-day-badge.birthday { background:var(--birthday); }
 .all-day-badge.holiday { background:var(--holiday);color:#fff; }
 
-/* Day view specifics */
+/* Day View */
 .day-view { overflow-y:auto; max-height: calc(100vh - var(--footer-height)); display:grid; grid-template-columns:60px 1fr;}
 .day-hour { min-height:56px;border:1px solid var(--cell-border);position:relative;padding:6px;overflow:hidden; }
 .day-hour .event { position:relative;margin-bottom:4px;display:inline-block; }
-
-/* Event style */
 .event {
   display:inline-flex;align-items:center;padding:4px 6px;border-radius:6px;font-size:12px;color:#fff;background:var(--accent);
   max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
@@ -140,18 +128,48 @@ html, body {
 .event.birthday { background:var(--birthday); }
 .event.holiday { background:var(--holiday); }
 
-/* Year view */
+/* Year View */
 .year-grid {
-  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:6px;overflow-y:auto;
-  height:calc(100vh - var(--footer-height));overflow-x:hidden;
+  display:grid;
+  grid-template-columns:repeat(3, 1fr);
+  grid-template-rows:repeat(4, 1fr);
+  gap:6px;
+  padding:6px;
+  height:calc(100vh - var(--footer-height));
+  overflow-x:hidden;
+  overflow-y:auto;
+  box-sizing:border-box;
 }
-.year-month { background:#242526;border:1px solid #2b2b2b;border-radius:6px;padding:6px;font-size:11px;display:flex;flex-direction:column }
+.year-month {
+  background:#242526;
+  border:1px solid #2b2b2b;
+  border-radius:6px;
+  padding:6px;
+  font-size:11px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+}
 .year-month strong { font-size:13px; margin-bottom:6px; }
-.year-mini { font-size:11px; position:relative; min-height:44px; }
-
-/* mini dots bottom-centered */
-.mini-dots { position:absolute; left:50%; transform:translateX(-50%); bottom:4px; display:flex; gap:4px; }
-.mini-dot { width:4px;height:4px;border-radius:50%; }
+.year-mini {
+  font-size:11px;
+  position:relative;
+  min-height:44px;
+}
+.mini-dots {
+  position:absolute;
+  left:50%;
+  transform:translateX(-50%);
+  bottom:2px;
+  display:flex;
+  gap:3px;
+  justify-content:center;
+}
+.mini-dot {
+  width:3.5px;
+  height:3.5px;
+  border-radius:50%;
+}
 
 /* Modal */
 .modal { position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10; }
