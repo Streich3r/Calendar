@@ -1,29 +1,27 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Calendar</title>
+  <meta name="theme-color" content="#0b0d12">
 
-  <!-- Theme Color -->
-  <meta name="theme-color" content="#0b0d12" />
+  <!-- stylesheet -->
+  <link rel="stylesheet" href="styles.css?v=1">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="styles.css?v=7" />
+  <!-- PWA manifest (unchanged) -->
+  <link rel="manifest" href="manifest.json">
 
-  <!-- PWA Manifest -->
-  <link rel="manifest" href="manifest.json" />
-
-  <!-- Icons -->
-  <link rel="icon" type="image/png" href="icon-512.png" />
-  <link rel="apple-touch-icon" href="icon-512.png" />
-  <meta name="msapplication-TileImage" content="icon-512.png" />
-  <meta name="msapplication-TileColor" content="#0b0d12" />
+  <link rel="icon" type="image/png" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <meta name="msapplication-TileImage" content="icon-512.png">
+  <meta name="msapplication-TileColor" content="#0b0d12">
 </head>
 
 <body>
   <div id="app" class="app">
     <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
+      <!-- Views (one active at a time) -->
       <section id="dayView" class="view" aria-hidden="true"></section>
       <section id="weekView" class="view" aria-hidden="true"></section>
       <section id="monthView" class="view" aria-hidden="true"></section>
@@ -33,10 +31,12 @@
     <footer class="footer" role="contentinfo">
       <div class="switchbar">
         <button id="prevBtn" class="icon-btn" aria-label="Previous">‹</button>
+
         <div class="title-wrap">
           <div id="title" class="title">Month Year</div>
           <div id="subtitle" class="subtitle"></div>
         </div>
+
         <button id="nextBtn" class="icon-btn" aria-label="Next">›</button>
       </div>
 
@@ -45,6 +45,7 @@
         <button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
         <button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
         <button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
+        <!-- Today button: always jumps to Month view and highlights today -->
         <button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
       </nav>
     </footer>
@@ -61,13 +62,18 @@
       <input id="eventInput" type="text" placeholder="Event title (required)" />
 
       <div class="modal-row">
+        <!-- Birthday checkbox: if checked, event is marked as recurring birthday and time selection disabled -->
         <label>
           <input id="eventBirthdayCheckbox" type="checkbox" /> Birthday
         </label>
+
+        <!-- Hour checkbox + select apply only for normal events; disabled automatically when Birthday is checked -->
         <label>
           <input id="eventHourCheckbox" type="checkbox" /> At hour
         </label>
-        <select id="eventHour" aria-label="Select hour" disabled></select>
+        <select id="eventHour" aria-label="Select hour" disabled>
+          <!-- hours inserted by JS -->
+        </select>
       </div>
 
       <div class="modal-actions">
@@ -77,14 +83,11 @@
     </div>
   </div>
 
-  <!-- App Script -->
-  <script src="app.js?v=7" defer></script>
-
+  <!-- script -->
+  <script src="app.js?v=1" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js').catch(() => {
-        /* silent fail */
-      });
+      navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});
     }
   </script>
 </body>
