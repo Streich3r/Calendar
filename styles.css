@@ -1,101 +1,309 @@
-:root{
-  --bg:#202124;
-  --panel:#303134;
-  --muted:#9aa0a6;
-  --accent:#1a73e8;     /* blue for events / today ring */
-  --text:#e8eaed;
-  --cell-border:#2c2c2c;
-  --event:#1a73e8;      /* event blue */
-  --birthday:#34a853;   /* birthday green */
-  --holiday:#e84545;    /* holiday red (only number / holiday label) */
-  --footer-height:112px;
-  --month-dot-size:8px;
-  --year-dot-size:4px;
+/* ==========================================================
+   styles.css – Komplett überarbeitete Version
+   - Dynamische Skalierung bis zur Navigationsleiste
+   - 12 Mini-Months korrekt skaliert (3x4)
+   - Punkte für Events/Birthdays im Month/Year-View zentriert
+   - All-Day-Spalte dynamisch gestapelt
+   ========================================================== */
+
+:root {
+  --bg: #202124;
+  --panel: #303134;
+  --muted: #9aa0a6;
+  --accent: #1a73e8;
+  --text: #e8eaed;
+  --cell-border: #2c2c2c;
+  --event: #8ab4f8;
+  --birthday: #34a853;
+  --holiday: #e84545;
+  --footer-height: 112px;
 }
 
-/* Reset & layout */
-html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased}
-.app{height:100%;display:flex;flex-direction:column}
-.main{flex:1;display:block;overflow:hidden;background:linear-gradient(#202124,#151617)}
+/* ==== Grundlayout ==== */
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
 
-.view{display:none;padding:8px;box-sizing:border-box;height:calc(100vh - var(--footer-height));overflow:hidden}
-.view.active{display:block}
+.app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-/* Footer / nav */
-.footer{background:var(--panel);border-top:1px solid #444;box-shadow:0 -6px 18px rgba(0,0,0,0.4)}
-.switchbar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #2b2b2b}
-.title-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
-.title{font-size:16px}
-.subtitle{font-size:11px;color:var(--muted)}
-.icon-btn{background:transparent;border:none;color:var(--text);font-size:22px;padding:8px}
-.bottom-nav{display:flex}
-.nav-btn{flex:1;padding:12px 6px;border:none;background:transparent;color:var(--muted);font-size:13px}
-.nav-btn.active{color:var(--text);border-top:3px solid var(--accent)}
+.main {
+  flex: 1;
+  display: block;
+  overflow: hidden;
+  background: linear-gradient(#202124, #151617);
+}
 
-/* ---------------- Month view styles ---------------- */
-.weekdays{display:grid;grid-template-columns:repeat(7,1fr);background:var(--panel);color:var(--muted);font-size:12px;padding:6px 0;text-align:center}
-.month-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:var(--row-height,80px);gap:2px}
-.day-cell{background:transparent;border:1px solid var(--cell-border);padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;cursor:pointer;overflow:hidden}
-.day-number{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;margin-top:4px;font-weight:500;transition:all .12s}
-.day-number.today{border:2px solid var(--accent);color:var(--accent)}           /* today ring */
-.day-number.holiday{color:var(--holiday);font-weight:700}                     /* holiday -> red number */
-.day-number.today.holiday{border:2px solid var(--accent);color:var(--holiday)}/* today + holiday -> blue ring + red number */
+/* ==== Views ==== */
+.view {
+  display: none;
+  padding: 8px;
+  box-sizing: border-box;
+  height: calc(100vh - var(--footer-height));
+  overflow: hidden;
+}
+.view.active {
+  display: block;
+}
 
-/* Dots container: center dots horizontally.
-   Each dot slightly overlaps the neighbor via negative margin for the "slightly overlapping" look */
-.day-events{margin-top:6px;display:flex;gap:4px;align-items:center;justify-content:center;flex-wrap:nowrap}
-.day-dot{width:var(--month-dot-size);height:var(--month-dot-size);border-radius:50%;display:inline-block;margin:0 -3px}
-.day-dot.event{background:var(--event)}
-.day-dot.birthday{background:var(--birthday)}
+/* ==== Footer / Navigation ==== */
+.footer {
+  background: var(--panel);
+  border-top: 1px solid #444;
+  box-shadow: 0 -6px 18px rgba(0,0,0,0.4);
+}
+.switchbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid #2b2b2b;
+}
+.title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+.title { font-size: 16px; }
+.subtitle { font-size: 11px; color: var(--muted); }
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 22px;
+  padding: 8px;
+}
+.bottom-nav { display: flex; }
+.nav-btn {
+  flex: 1;
+  padding: 12px 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+}
+.nav-btn.active {
+  color: var(--text);
+  border-top: 3px solid var(--accent);
+}
 
-/* ---------------- Week & Day styles ---------------- */
-.week-grid{display:grid;grid-template-columns:60px repeat(7,1fr);align-items:start;border-top:1px solid #2b2b2b;overflow-y:auto;height:calc(100vh - var(--footer-height))}
-.day-grid{display:grid;grid-template-columns:60px 1fr;align-items:start;border-top:1px solid #2b2b2b;overflow-y:auto;height:calc(100vh - var(--footer-height))}
+/* ==== Month View ==== */
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 12px;
+  padding: 6px 0;
+  text-align: center;
+}
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: var(--row-height, 80px);
+  gap: 2px;
+}
+.day-cell {
+  background: transparent;
+  border: 1px solid var(--cell-border);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: pointer;
+  overflow: hidden;
+}
+.day-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  margin-top: 4px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.day-number.today {
+  border: 2px solid var(--accent);
+  color: var(--accent);
+}
+.day-number.holiday {
+  color: var(--holiday);
+  font-weight: bold;
+}
+.day-events {
+  margin-top: 6px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+.day-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  position: relative;
+  top: 1px;
+}
+.day-dot.event { background: var(--event); }
+.day-dot.birthday { background: var(--birthday); }
 
-.hour-label{padding:6px 8px;font-size:11px;color:var(--muted);border-right:1px solid #2b2b2b}
-.hour-cell{height:56px;border:1px solid var(--cell-border);position:relative;padding:2px;overflow:hidden}
-.event{position:absolute;left:6px;right:6px;background:var(--event);color:#fff;padding:6px 8px;border-radius:8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-sizing:border-box}
-.event.birthday{background:var(--birthday)}
-.event.holiday{background:transparent;color:var(--holiday);border-radius:6px;padding:4px 6px;border:1px solid rgba(232,69,69,0.12)}
+/* ==== Week & Day Views ==== */
+.week-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  align-items: start;
+  border-top: 1px solid #2b2b2b;
+  overflow-y: auto;
+  max-height: calc(100vh - var(--footer-height));
+}
+.hour-label {
+  padding: 6px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  border-right: 1px solid #2b2b2b;
+}
+.hour-cell {
+  height: 56px;
+  border: 1px solid var(--cell-border);
+  position: relative;
+  overflow: hidden;
+}
+.event {
+  background: var(--accent);
+  color: #fff;
+  padding: 4px 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin: 1px 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.event.birthday { background: var(--birthday); }
+.event.holiday { background: var(--holiday); }
 
-/* All-day row: flexible, wraps if many bars — the cell itself will not expand beyond the area, bars wrap inside it */
-.all-day-row{display:contents}
-.all-day-label{padding:6px 8px;font-size:11px;color:var(--muted);border-right:1px solid #2b2b2b;background:#252627}
-.all-day-cell{border:1px solid var(--cell-border);min-height:44px;position:relative;padding:6px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;overflow:hidden}
-.event-bar{display:inline-block;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:6px 8px;border-radius:8px;font-size:12px}
-.event-bar.event{background:var(--event);color:#fff}
-.event-bar.birthday{background:var(--birthday);color:#fff}
-.event-bar.holiday{background:transparent;color:var(--holiday);border:1px solid rgba(232,69,69,0.14)}
+/* All-day Spalte (oben) */
+.all-day-row {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid #2b2b2b;
+  background: #262728;
+  padding: 2px;
+  min-height: 40px;
+  overflow-y: auto;
+}
+.all-day-row .event {
+  font-size: 11px;
+  text-align: center;
+  margin: 2px 0;
+}
 
-/* ---------------- Year view styles ---------------- */
-.year-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,1fr);gap:6px;padding:6px;height:calc(100vh - var(--footer-height));overflow-y:auto;overflow-x:hidden}
-.year-month{background:#242526;border:1px solid #2b2b2b;border-radius:6px;padding:8px;min-height:120px;box-sizing:border-box}
-.year-month strong{font-size:13px;display:block;margin-bottom:6px}
-.year-mini{display:grid;grid-template-columns:repeat(7,1fr);font-size:11px;text-align:center}
-.year-mini .day{position:relative;padding:2px;min-height:28px}
-.year-mini .day .day-number{display:block}
+/* ==== Year View ==== */
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6px;
+  padding: 6px;
+  height: calc(100vh - var(--footer-height));
+  overflow-y: auto;
+}
+.year-month {
+  background: #242526;
+  border: 1px solid #2b2b2b;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 11px;
+}
+.year-month strong { font-size: 13px; display:block; margin-bottom:4px; }
+.year-month .holiday { color: var(--holiday); font-weight: bold; }
+.mini-month {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 10px;
+  text-align: center;
+}
+.mini-day {
+  position: relative;
+  padding: 1px;
+}
+.mini-day .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.mini-day .dot.event { background: var(--event); }
+.mini-day .dot.birthday { background: var(--birthday); }
 
-/* mini dots centered under number — overlap slightly */
-.year-mini .day .mini-dots{position:absolute;left:50%;transform:translateX(-50%);bottom:2px;display:flex;gap:2px}
-.year-dot{width:var(--year-dot-size);height:var(--year-dot-size);border-radius:50%}
-.year-dot.event{background:var(--event)}
-.year-dot.birthday{background:var(--birthday)}
+/* ==== Modal ==== */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.5);
+  z-index: 10;
+}
+.modal.hidden { display: none; }
+.modal-content {
+  background: var(--panel);
+  padding: 14px;
+  border-radius: 10px;
+  width: 92%;
+  max-width: 420px;
+}
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 6px 0 0 0;
+  max-height: 220px;
+  overflow: auto;
+}
+.event-list li {
+  background: #212225;
+  padding: 6px;
+  margin: 4px 0;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.modal-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+.btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+.btn.alt { background: #3a3b3c; }
 
-/* ---------------- Modal ---------------- */
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10}
-.modal.hidden{display:none}
-.modal-content{background:var(--panel);padding:14px;border-radius:10px;width:92%;max-width:520px}
-.event-list{list-style:none;padding:0;margin:6px 0 0 0;max-height:220px;overflow:auto}
-.event-list li{background:#212225;padding:6px;margin:4px 0;border-radius:6px;font-size:13px}
-.modal-row{display:flex;gap:8px;align-items:center;margin-top:10px}
-.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-.btn{background:var(--accent);color:#fff;border:none;padding:8px 12px;border-radius:6px}
-.btn.alt{background:#3a3b3c}
+/* ==== Accessibility ==== */
+.sr-only {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
 
-/* Accessibility helper */
-.sr-only{position:absolute;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
-
-/* small screens tweak */
-@media (min-width:700px){
-  .month-grid{gap:4px}
+/* ==== Responsive ==== */
+@media (min-width: 700px) {
+  .month-grid { gap: 4px; }
 }
