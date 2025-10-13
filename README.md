@@ -5,7 +5,6 @@ Simple Calendar for offline using
 
 ## Features
 
-- Offline-ready
+- offline-ready
 - touch/mouse/keyboard-ready
-- Dark Mode
 - PWA-ready
