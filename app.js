@@ -270,10 +270,15 @@ function renderYear() {
       if (evs.length) dots += `<span class="year-dot event"></span>`;
       if (bds.length) dots += `<span class="year-dot birthday"></span>`;
 
-      html += `<div class="mini-day">
-                 <span class="mini-number ${hol ? 'holiday' : ''}">${d}</span>
-                 ${dots ? `<div class="mini-dots">${dots}</div>` : ''}
-               </div>`;
+    const isToday = (new Date(y, m, d)).toDateString() === (new Date()).toDateString();
+
+    html += `<div class="mini-day">
+           <span class="mini-number ${hol ? 'holiday' : ''} ${isToday ? 'today' : ''}">
+             ${d}
+           </span>
+           ${dots ? `<div class="mini-dots">${dots}</div>` : ''}
+         </div>`;
+
     }
 
     html += `</div></div>`;
@@ -442,6 +447,7 @@ window.addEventListener('resize', adjustRowHeight);
 /* ---------------- Init ---------------- */
 setView('month');
 window.addEventListener('load', ()=> { adjustRowHeight(); render(); });
+
 
 
 
