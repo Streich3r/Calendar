@@ -153,6 +153,14 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
   min-height: 18px;
 }
 
+.mini-number.today {
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  padding: 2px 5px;
+  color: inherit; /* <-- behält Rot für Feiertage */
+}
+
+
 
 /* ---------------- Modal ---------------- */
 .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.5);z-index:10}
@@ -172,4 +180,5 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--text);-webkit-fo
 @media (min-width:700px){
   .month-grid{gap:4px}
 }
+
 
