@@ -243,46 +243,56 @@ function renderDay(){
 }
 
 /* ---------------- Year ---------------- */
-function renderYear(){
+function renderYear() {
   const y = currentDate.getFullYear();
   const holidays = germanHolidays(y);
-
   let html = `<div class="year-grid">`;
-  for(let mm=0; mm<12; mm++){
-    const monthName = new Date(y,mm,1).toLocaleString(undefined,{ month:'long' });
-    html += `<div class="year-month" data-month="${mm}" data-year="${y}"><strong>${monthName}</strong><div class="mini-month">`;
-    const first = new Date(y,mm,1);
-    const firstIdx = (first.getDay()+6)%7;
-    const lastDate = new Date(y,mm+1,0).getDate();
 
-    for(let i=0;i<firstIdx;i++) html += `<div class="mini-day"></div>`;
+  for (let m = 0; m < 12; m++) {
+    const monthName = new Date(y, m, 1).toLocaleString(undefined, { month: 'long' });
+    html += `<div class="year-month" data-month="${m}" data-year="${y}">
+               <strong>${monthName}</strong>
+               <div class="mini-month">`;
 
-    for(let d=1; d<=lastDate; d++){
-      const ds = `${y}-${mm+1}-${d}`;
+    const first = new Date(y, m, 1);
+    const firstIdx = (first.getDay() + 6) % 7;
+    const lastDate = new Date(y, m + 1, 0).getDate();
+
+    for (let i = 0; i < firstIdx; i++) html += `<div class="mini-day"></div>`;
+
+    for (let d = 1; d <= lastDate; d++) {
+      const ds = `${y}-${m + 1}-${d}`;
+      const hol = holidays.find(h => h.date === ds);
       const evs = normalEventsForDate(ds);
       const bds = birthdaysForDateKey(ds);
-      const hol = holidays.find(h=>h.date===ds);
-      html += `<div class="mini-day"><span class="mini-number ${hol? 'holiday':''}">${d}</span>`;
+
       let dots = '';
-      if(evs.length) dots += `<span class="year-dot event"></span>`;
-      if(bds.length) dots += `<span class="year-dot birthday"></span>`;
-      if(dots) html += `<div class="mini-dots">${dots}</div>`;
-      html += `</div>`;
+      if (evs.length) dots += `<span class="year-dot event"></span>`;
+      if (bds.length) dots += `<span class="year-dot birthday"></span>`;
+
+      html += `<div class="mini-day">
+                 <span class="mini-number ${hol ? 'holiday' : ''}">${d}</span>
+                 ${dots ? `<div class="mini-dots">${dots}</div>` : ''}
+               </div>`;
     }
+
     html += `</div></div>`;
   }
+
   html += `</div>`;
   views.year.innerHTML = html;
 
-  // click mini-month -> open month view
-  document.querySelectorAll('.year-month').forEach(el=>{
-    el.addEventListener('click', ()=>{
-      const yy = parseInt(el.dataset.year,10), mm = parseInt(el.dataset.month,10);
+  // Click to open selected month
+  document.querySelectorAll('.year-month').forEach(el => {
+    el.addEventListener('click', () => {
+      const yy = parseInt(el.dataset.year, 10);
+      const mm = parseInt(el.dataset.month, 10);
       currentDate = new Date(yy, mm, 1);
       setView('month');
     });
   });
 }
+
 
 /* ---------------- Modal & CRUD ---------------- */
 let modalOpenFor = null;
@@ -432,3 +442,4 @@ window.addEventListener('resize', adjustRowHeight);
 /* ---------------- Init ---------------- */
 setView('month');
 window.addEventListener('load', ()=> { adjustRowHeight(); render(); });
+
