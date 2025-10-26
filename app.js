@@ -35,7 +35,7 @@ function calcEaster(y){
   return new Date(y, month-1, day);
 }
 function germanHolidays(year){
-  const fixed=[[1,1,"Neujahr"],[5,1,"Tag der Arbeit"],[19,26,"TEST"],[10,3,"Tag der Deutschen Einheit"],[12,25,"1. Weihnachtstag"],[12,26,"2. Weihnachtstag"]];
+  const fixed=[[1,1,"Neujahr"],[5,1,"Tag der Arbeit"],[10,26,"TEST1"],[10,3,"Tag der Deutschen Einheit"],[12,25,"1. Weihnachtstag"],[12,26,"2. Weihnachtstag"]];
   const eas=calcEaster(year);
   const add=(off,label)=>{ const d=new Date(eas); d.setDate(d.getDate()+off); fixed.push([d.getMonth()+1,d.getDate(),label]); };
   add(1,"Ostermontag"); add(39,"Christi Himmelfahrt"); add(50,"Pfingstmontag"); add(60,"Fronleichnam");
@@ -442,5 +442,6 @@ window.addEventListener('resize', adjustRowHeight);
 /* ---------------- Init ---------------- */
 setView('month');
 window.addEventListener('load', ()=> { adjustRowHeight(); render(); });
+
 
 
