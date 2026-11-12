@@ -1,11 +1,11 @@
 /* Calendar PWA – automatische Updates + Offline-Fallback.
-   Als "sw.js" im gleichen Ordner wie index.html ablegen.
+   Als "service-worker.js" im gleichen Ordner wie index.html ablegen.
    Funktioniert auch unter GitHub-Pages-Unterverzeichnissen.
 */
 
 // Einmaliger neuer Cache-Name zum Umstieg vom alten cache-first Worker.
 // Danach ist bei normalen HTML/CSS/JS-Updates KEIN Hochzählen nötig.
-const CACHE_NAME = 'calendar-shell-v2';
+const CACHE_NAME = 'calendar-shell-v3';
 const OLD_CACHE_PREFIXES = ['calendar-cache-', 'calendar-shell-'];
 const APP_FILES = [
   'index.html',
@@ -13,9 +13,7 @@ const APP_FILES = [
   'app.js',
   'manifest.json',
   'icon-192.png',
-  'icon-512.png',
-  'favicon.ico',
-  'favicon-32x32.png'
+  'icon-512.png'
 ];
 
 // Immer relativ zur Service-Worker-Registrierung auflösen.

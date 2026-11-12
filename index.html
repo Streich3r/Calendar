@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Calendar</title>
+  <title>IVY Kalender</title>
   <meta name="theme-color" content="#0b0d12">
 
   <!-- stylesheet -->
-  <link rel="stylesheet" href="styles.css?v=1">
+  <link rel="stylesheet" href="styles.css?v=2">
 
   <!-- PWA manifest (unchanged) -->
   <link rel="manifest" href="manifest.json">
@@ -20,7 +20,7 @@
 
 <body>
   <div id="app" class="app">
-    <main id="calendarArea" class="main" role="main" aria-label="Calendar area">
+    <main id="calendarArea" class="main" role="main" aria-label="Kalenderansichten">
       <!-- Views (one active at a time) -->
       <section id="dayView" class="view" aria-hidden="true"></section>
       <section id="weekView" class="view" aria-hidden="true"></section>
@@ -30,23 +30,23 @@
 
     <footer class="footer" role="contentinfo">
       <div class="switchbar">
-        <button id="prevBtn" class="icon-btn" aria-label="Previous">‹</button>
+        <button id="prevBtn" class="icon-btn" aria-label="Zurück">‹</button>
 
         <div class="title-wrap">
-          <div id="title" class="title">Month Year</div>
+          <div id="title" class="title">Monat Jahr</div>
           <div id="subtitle" class="subtitle"></div>
         </div>
 
-        <button id="nextBtn" class="icon-btn" aria-label="Next">›</button>
+        <button id="nextBtn" class="icon-btn" aria-label="Weiter">›</button>
       </div>
 
-      <nav class="bottom-nav" role="navigation" aria-label="Views">
-        <button class="nav-btn" data-view="day" aria-pressed="false">Day</button>
-        <button class="nav-btn" data-view="week" aria-pressed="false">Week</button>
-        <button class="nav-btn active" data-view="month" aria-pressed="true">Month</button>
-        <button class="nav-btn" data-view="year" aria-pressed="false">Year</button>
+      <nav class="bottom-nav" role="navigation" aria-label="Ansichten">
+        <button class="nav-btn" data-view="day" aria-pressed="false">Tag</button>
+        <button class="nav-btn" data-view="week" aria-pressed="false">Woche</button>
+        <button class="nav-btn active" data-view="month" aria-pressed="true">Monat</button>
+        <button class="nav-btn" data-view="year" aria-pressed="false">Jahr</button>
         <!-- Today button: always jumps to Month view and highlights today -->
-        <button id="todayBtn" class="nav-btn" aria-pressed="false">Today</button>
+        <button id="todayBtn" class="nav-btn" aria-pressed="false">Heute</button>
       </nav>
     </footer>
   </div>
@@ -54,37 +54,37 @@
   <!-- Event Modal -->
   <div id="eventModal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal-content">
-      <h2 id="modalDate">Date</h2>
+      <h2 id="modalDate">Datum</h2>
 
       <ul id="eventList" class="event-list" aria-live="polite"></ul>
 
-      <label for="eventInput" class="sr-only">Event text</label>
-      <input id="eventInput" type="text" placeholder="Event title (required)" />
+      <label for="eventInput" class="sr-only">Termintext</label>
+      <input id="eventInput" type="text" placeholder="Terminname" />
 
       <div class="modal-row">
         <!-- Birthday checkbox: if checked, event is marked as recurring birthday and time selection disabled -->
         <label>
-          <input id="eventBirthdayCheckbox" type="checkbox" /> Birthday
+          <input id="eventBirthdayCheckbox" type="checkbox" /> Geburtstag
         </label>
 
         <!-- Hour checkbox + select apply only for normal events; disabled automatically when Birthday is checked -->
         <label>
-          <input id="eventHourCheckbox" type="checkbox" /> At hour
+          <input id="eventHourCheckbox" type="checkbox" /> Uhrzeit
         </label>
-        <select id="eventHour" aria-label="Select hour" disabled>
+        <select id="eventHour" aria-label="Uhrzeit wählen" disabled>
           <!-- hours inserted by JS -->
         </select>
       </div>
 
       <div class="modal-actions">
-        <button id="addEventBtn" class="btn">Add</button>
-        <button id="closeModalBtn" class="btn alt">Close</button>
+        <button id="addEventBtn" class="btn">Speichern</button>
+        <button id="closeModalBtn" class="btn alt">Schließen</button>
       </div>
     </div>
   </div>
 
   <!-- script -->
-  <script src="app.js?v=1" defer></script>
+  <script src="app.js?v=2" defer></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js').catch(()=>{/*sw fail ok*/});

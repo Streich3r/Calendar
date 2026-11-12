@@ -1,453 +1,251 @@
-/* app.js - Final, vollständig
-   - Mit: All-day stacking, birthdays recurring (29.02 fallback), modal hour handling,
-     month/year dots centered, year 3x4 mini-months, render on view switch.
-*/
-
-/* ---------------- Helpers & State ---------------- */
+/* IVY Calendar V2: stable high-density calendars, local dates, legacy event storage */
+'use strict';
 const $ = id => document.getElementById(id);
-const pad = n => (n < 10 ? '0' + n : '' + n);
-const isLeap = y => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0));
-const keyFromDate = d => `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; // YYYY-M-D
-
-let currentDate = new Date();
-let currentView = 'month';
-let events = JSON.parse(localStorage.getItem('events') || '{}'); // { "YYYY-M-D": [{text, hour?, birthday?}, ...] }
-
-/* ---------------- Elements ---------------- */
-const views = { day: $('dayView'), week: $('weekView'), month: $('monthView'), year: $('yearView') };
-const calendarArea = $('calendarArea');
-const titleEl = $('title'), subtitleEl = $('subtitle');
-const prevBtn = $('prevBtn'), nextBtn = $('nextBtn'), todayBtn = $('todayBtn');
-const navBtns = Array.from(document.querySelectorAll('.nav-btn'));
-
-const modal = $('eventModal'), modalDate = $('modalDate'), eventList = $('eventList');
-const eventInput = $('eventInput'), addEventBtn = $('addEventBtn'), closeModalBtn = $('closeModalBtn');
-const eventHourCheckbox = $('eventHourCheckbox'), eventHourSelect = $('eventHour');
-const eventBirthdayCheckbox = $('eventBirthdayCheckbox');
-
-/* ---------------- Holidays ---------------- */
-function calcEaster(y){
-  const f=Math.floor;
-  const a=y%19,b=f(y/100),c=y%100,d=f(b/4),e=b%4,g=f((8*b+13)/25);
-  const h=(19*a+b-d-g+15)%30,i=f(c/4),k=c%4;
-  const l=(32+2*e+2*i-h-k)%7,m=f((a+11*h+22*l)/451);
-  const month=f((h+l-7*m+114)/31), day=((h+l-7*m+114)%31)+1;
-  return new Date(y, month-1, day);
-}
-function germanHolidays(year){
-  const fixed=[[1,1,"Neujahr"],[5,1,"Tag der Arbeit"],[10,26,"TEST1"],[10,3,"Tag der Deutschen Einheit"],[12,25,"1. Weihnachtstag"],[12,26,"2. Weihnachtstag"]];
-  const eas=calcEaster(year);
-  const add=(off,label)=>{ const d=new Date(eas); d.setDate(d.getDate()+off); fixed.push([d.getMonth()+1,d.getDate(),label]); };
-  add(1,"Ostermontag"); add(39,"Christi Himmelfahrt"); add(50,"Pfingstmontag"); add(60,"Fronleichnam");
-  return fixed.map(([m,d,label])=>({date:`${year}-${m}-${d}`,label}));
-}
-
-/* ---------------- Birthdays recurring ---------------- */
-function getAllStoredBirthdays(){
-  const out=[];
-  for(const k in events){
-    (events[k]||[]).forEach(ev=>{
-      if(ev && ev.birthday && ev.text){
-        const [oy,om,od] = k.split('-').map(Number);
-        out.push({ text: ev.text, om, od, origKey: k });
-      }
-    });
-  }
-  return out;
-}
-function birthdaysForDateKey(ds){
-  const [y,m,d] = ds.split('-').map(Number);
-  const all = getAllStoredBirthdays();
-  const seen = new Set();
-  const res = [];
-  all.forEach(b=>{
-    let bd = b.od, bm = b.om;
-    if(bm===2 && bd===29 && !isLeap(y)) bd = 28; // fallback
-    if(bm===m && bd===d){
-      const key = (b.text||'').trim().toLowerCase();
-      if(key && !seen.has(key)){ seen.add(key); res.push({ text: b.text, origKey: b.origKey }); }
+const pad = n => String(n).padStart(2,'0');
+const dateKey = d => `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+const localDate = key => {
+  const m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(String(key));
+  if (!m) return null;
+  const y = +m[1], mo = +m[2], day = +m[3];
+  const d = new Date(y,mo-1,day,12);
+  return d.getFullYear()===y && d.getMonth()===mo-1 && d.getDate()===day ? d : null;
+};
+const esc = v => String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (d,options) => new Intl.DateTimeFormat('de-DE',options).format(d);
+const today = () => new Date();
+const leap = y => y%4===0&&(y%100!==0||y%400===0);
+const safeHour = v => v===null||v===undefined||v===''?null:(Number.isInteger(Number(v))&&Number(v)>=0&&Number(v)<=23?Number(v):null);
+const cloneDate = d => new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);
+const stepCalendar = (date,unit,dir) => {
+  if(unit==='day') return new Date(date.getFullYear(),date.getMonth(),date.getDate()+dir,12);
+  if(unit==='week') return new Date(date.getFullYear(),date.getMonth(),date.getDate()+7*dir,12);
+  const y=date.getFullYear(),m=date.getMonth(),d=date.getDate();
+  const target = unit==='year' ? new Date(y+dir,m,1,12) : new Date(y,m+dir,1,12);
+  return new Date(target.getFullYear(),target.getMonth(),Math.min(d,new Date(target.getFullYear(),target.getMonth()+1,0).getDate()),12);
+};
+function loadEvents(){
+  try {
+    const value = JSON.parse(localStorage.getItem('events')||'{}');
+    if(!value||typeof value!=='object'||Array.isArray(value)) return {};
+    const out={};
+    for(const [key,list] of Object.entries(value)){
+      if(!localDate(key)||!Array.isArray(list)) continue;
+      const safe=list.filter(e=>e&&typeof e.text==='string'&&e.text.trim())
+       .map(e=>({text:e.text.trim().slice(0,250),...(e.birthday?{birthday:true}:{}),...(!e.birthday && safeHour(e.hour)!==null?{hour:safeHour(e.hour)}:{})}));
+      if(safe.length) out[key]=safe;
     }
-  });
-  return res;
+    return out;
+  }catch(err){console.warn('Kalenderdaten konnten nicht geladen werden; Originaldaten bleiben erhalten.',err);return {}}
 }
-function normalEventsForDate(ds){ return (events[ds]||[]).filter(e=>!e.birthday); }
-
-/* ---------------- View control ---------------- */
+let events=loadEvents();
+let currentDate=cloneDate(today());
+let currentView='month';
+let modalOpenFor=null;
+let birthdayCache=new Map();
+let holidayCache=new Map();
+const views={day:$('dayView'),week:$('weekView'),month:$('monthView'),year:$('yearView')};
+const navBtns=[...document.querySelectorAll('.nav-btn[data-view]')];
+const modal=$('eventModal'), modalDate=$('modalDate'), eventList=$('eventList');
+const eventInput=$('eventInput'), hourBox=$('eventHourCheckbox'), hourSelect=$('eventHour'), birthdayBox=$('eventBirthdayCheckbox');
+const summaryDate=key=>fmt(localDate(key),{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+function saveEvents(){
+  try{localStorage.setItem('events',JSON.stringify(events)); birthdayCache.clear();return true}
+  catch(err){console.error('Speichern fehlgeschlagen',err);alert('Speichern fehlgeschlagen. Bitte Browserspeicher prüfen.');return false}
+}
+// Computus / Gregorian Easter
+function easter(year){
+ const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),
+ h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),
+ month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
+ return new Date(year,month-1,day,12);
+}
+function holidays(year){
+ if(holidayCache.has(year))return holidayCache.get(year);
+ const list=[[1,1,'Neujahr'],[5,1,'Tag der Arbeit'],[10,3,'Tag der Deutschen Einheit'],[12,25,'1. Weihnachtstag'],[12,26,'2. Weihnachtstag']];
+ const base=easter(year);
+ const movable=[[-2,'Karfreitag'],[1,'Ostermontag'],[39,'Christi Himmelfahrt'],[50,'Pfingstmontag']];
+ for(const [offset,label] of movable){const d=new Date(year,base.getMonth(),base.getDate()+offset,12);list.push([d.getMonth()+1,d.getDate(),label]);}
+ // Bundesland-spezifische Feiertage bewusst nicht bundesweit als Feiertag markieren.
+ const map=new Map(list.map(([m,d,name])=>[`${year}-${m}-${d}`,name]));
+ holidayCache.set(year,map);return map;
+}
+function birthdayMap(year){
+ if(birthdayCache.has(year)) return birthdayCache.get(year);
+ const map=new Map();
+ for(const [key,items] of Object.entries(events)){
+  const original=localDate(key);if(!original) continue;
+  for(let i=0;i<items.length;i++){
+   const ev=items[i];if(!ev.birthday)continue;
+   const month=original.getMonth(),date=month===1&&original.getDate()===29&&!leap(year)?28:original.getDate();
+   const k=`${year}-${month+1}-${date}`;
+   if(!map.has(k))map.set(k,[]);
+   map.get(k).push({text:ev.text,originalKey:key,index:i,birthday:true});
+  }
+ }
+ birthdayCache.set(year,map);return map;
+}
+function forDate(key){
+ const date=localDate(key);if(!date)return {normal:[],birthdays:[],holiday:''};
+ return {normal:(events[key]||[]).filter(e=>!e.birthday),birthdays:birthdayMap(date.getFullYear()).get(key)||[],holiday:holidays(date.getFullYear()).get(key)||''};
+}
+function summary(key){
+ const {normal,birthdays,holiday}=forDate(key);
+ const parts=[...normal.map(e=>e.hour==null?e.text:`${pad(e.hour)}:00 ${e.text}`),...birthdays.map(e=>'🎂 '+e.text)];
+ if(holiday)parts.unshift(holiday);
+ return {normal,birthdays,holiday,items:parts,label:`${summaryDate(key)}${parts.length?' · '+parts.length+' Einträge':''}`};
+}
 function setView(v){
-  currentView = v;
-  Object.values(views).forEach(el=>{ el.classList.remove('active'); el.setAttribute('aria-hidden','true'); });
-  views[v].classList.add('active'); views[v].setAttribute('aria-hidden','false');
-  navBtns.forEach(b=>{ b.classList.toggle('active', b.dataset.view===v); b.setAttribute('aria-pressed', b.dataset.view===v ? 'true':'false'); });
-  // call correct renderer explicitly to avoid stale state
-  render();
+ if(!views[v])return;
+ currentView=v;
+ for(const [key,el] of Object.entries(views)){const active=key===v;el.classList.toggle('active',active);el.setAttribute('aria-hidden',String(!active));}
+ for(const b of navBtns){const on=b.dataset.view===v;b.classList.toggle('active',on);b.setAttribute('aria-pressed',String(on));}
+ render();
 }
-
 function render(){
-  titleEl.textContent = (currentView==='year') ? currentDate.getFullYear() : currentDate.toLocaleDateString(undefined,{ month:'long', year:'numeric' });
-  subtitleEl.textContent = (currentView==='day') ? currentDate.toLocaleDateString(undefined,{ weekday:'short', day:'numeric', month:'short' }) : '';
-  if(currentView==='month') renderMonth();
-  else if(currentView==='week') renderWeek();
-  else if(currentView==='day') renderDay();
-  else renderYear();
-  adjustRowHeight();
+ const y=currentDate.getFullYear(), m=currentDate.getMonth();
+ $('title').textContent=currentView==='year'?String(y):currentView==='day'?fmt(currentDate,{day:'numeric',month:'long',year:'numeric'}):fmt(currentDate,{month:'long',year:'numeric'});
+ $('subtitle').textContent=currentView==='week'?`KW ${weekNumber(currentDate)} · ${y}`:currentView==='day'?fmt(currentDate,{weekday:'long'}):'';
+ if(currentView==='month')renderMonth();else if(currentView==='week')renderWeek();else if(currentView==='day')renderDay();else renderYear();
 }
-
-/* ---------------- Month ---------------- */
+function weekNumber(date){
+ const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));
+ const yearStart=new Date(Date.UTC(d.getUTCFullYear(),0,1));return Math.ceil((((d-yearStart)/86400000)+1)/7);
+}
+function markerMarkup(info,scope){
+ const n=info.normal.length,b=info.birthdays.length;
+ return `<span class="${scope}-markers" aria-hidden="true">${n?`<i class="${scope}-marker event-marker"></i>`:''}${b?`<i class="${scope}-marker birthday-marker"></i>`:''}</span>`;
+}
+const weekdays=['Mo','Di','Mi','Do','Fr','Sa','So'];
 function renderMonth(){
-  const y = currentDate.getFullYear(), m = currentDate.getMonth();
-  const first = new Date(y,m,1);
-  const firstIdx = (first.getDay()+6)%7;
-  const lastDate = new Date(y,m+1,0).getDate();
-  const holidays = germanHolidays(y);
-  const todayKey = keyFromDate(new Date());
-
-  let html = `<div class="weekdays">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(w=>`<div>${w}</div>`).join('')}</div>`;
-  html += `<div class="month-grid">`;
-
-  for(let i=0;i<firstIdx;i++) html += `<div class="day-cell empty"></div>`;
-
-  for(let d=1; d<=lastDate; d++){
-    const ds = `${y}-${m+1}-${d}`;
-    const hol = holidays.find(h=>h.date===ds);
-    const isToday = ds === todayKey;
-    const normals = normalEventsForDate(ds);
-    const bdays = birthdaysForDateKey(ds);
-
-    const dots = [];
-    if(normals.length) dots.push(`<div class="day-dot event" title="${normals.map(e=>e.text).join(', ')}"></div>`);
-    if(bdays.length) dots.push(`<div class="day-dot birthday" title="${bdays.map(b=>b.text).join(', ')}"></div>`);
-
-    const numCls = ((isToday)?'today':'') + (hol ? ' holiday' : '');
-    html += `<div class="day-cell" data-date="${ds}" ${hol?`title="${hol.label}"`:''}>
-      <div class="day-number ${numCls.trim()}">${d}</div>
-      <div class="day-events">${dots.join('')}</div>
-    </div>`;
-  }
-
-  const total = firstIdx + lastDate;
-  const rem = (7 - (total % 7)) % 7;
-  for(let i=0;i<rem;i++) html += `<div class="day-cell empty"></div>`;
-
-  html += `</div>`;
-  views.month.innerHTML = html;
-
-  document.querySelectorAll('.day-cell[data-date]').forEach(cell=>cell.addEventListener('click', ()=> openModal(cell.dataset.date)));
+ const y=currentDate.getFullYear(),month=currentDate.getMonth(),offset=(new Date(y,month,1).getDay()+6)%7,last=new Date(y,month+1,0).getDate();
+ let html=`<div class="weekdays">${weekdays.map(w=>`<div>${w}</div>`).join('')}</div><div class="month-grid">`;
+ for(let i=0;i<offset;i++)html+='<div class="day-cell empty"></div>';
+ const current=dateKey(today());
+ for(let day=1;day<=last;day++){
+  const key=`${y}-${month+1}-${day}`,info=summary(key),count=info.normal.length+info.birthdays.length;
+  html+=`<button type="button" class="day-cell${key===current?' is-today':''}" data-date="${key}" aria-label="${esc(info.label)}" title="${esc(info.items.slice(0,8).join(' · ')||info.holiday||'')}"><span class="day-number${info.holiday?' holiday':''}">${day}</span>${markerMarkup(info,'day')}${count?`<span class="day-count">${count>99?'99+':count}</span>`:''}</button>`;
+ }
+ for(let i=0;i<(7-(offset+last)%7)%7;i++)html+='<div class="day-cell empty"></div>';
+ views.month.innerHTML=html+'</div>';
+ views.month.querySelectorAll('[data-date]').forEach(el=>el.addEventListener('click',()=>openModal(el.dataset.date)));
 }
-
-/* ---------------- Week ---------------- */
+function renderYear(){
+ const year=currentDate.getFullYear(),t=dateKey(today());let html='<div class="year-grid">';
+ for(let month=0;month<12;month++){
+  const label=fmt(new Date(year,month,1,12),{month:'long'}),offset=(new Date(year,month,1).getDay()+6)%7,last=new Date(year,month+1,0).getDate();
+  html+=`<section class="year-month" aria-label="${esc(label)}"><button type="button" class="year-month-title" data-month="${month}">${esc(label)}</button><div class="mini-weekdays">${weekdays.map(w=>`<span>${w.slice(0,1)}</span>`).join('')}</div><div class="mini-month">`;
+  for(let i=0;i<offset;i++)html+='<span class="mini-day empty"></span>';
+  for(let day=1;day<=last;day++){
+   const key=`${year}-${month+1}-${day}`,info=summary(key),count=info.normal.length+info.birthdays.length;
+   // Always at most TWO dots. Total count is exposed via title + aria-label.
+   html+=`<button type="button" class="mini-day${key===t?' is-today':''}${info.holiday?' holiday':''}" data-date="${key}" title="${esc(info.items.slice(0,6).join(' · ')||info.holiday||summaryDate(key))}" aria-label="${esc(info.label)}"><span class="mini-number">${day}</span>${markerMarkup(info,'mini')}${count>2?`<span class="mini-extra">+</span>`:''}</button>`;
+  }
+  for(let i=0;i<(42-offset-last);i++)html+='<span class="mini-day empty"></span>';
+  html+='</div></section>';
+ }
+ views.year.innerHTML=html+'</div>';
+ views.year.querySelectorAll('.year-month-title').forEach(btn=>btn.addEventListener('click',()=>{currentDate=new Date(year,+btn.dataset.month,1,12);setView('month')}));
+ views.year.querySelectorAll('.mini-day[data-date]').forEach(btn=>btn.addEventListener('click',()=>openModal(btn.dataset.date)));
+}
+function smallEvents(items,max,extraClass=''){
+ const n=items.length,rows=items.slice(0,max).map(ev=>`<span class="event-pill ${extraClass}" title="${esc(ev.text)}">${esc(ev.text)}</span>`);
+ if(n>max)rows.push(`<span class="event-more">+${n-max} weitere</span>`);
+ return rows.join('');
+}
+function daySummaryHtml(key,cap=3){
+ const data=forDate(key),all=[...(data.holiday?[{text:data.holiday,holiday:true}]:[]),...data.birthdays.map(b=>({text:'🎂 '+b.text,birthday:true})),...data.normal.filter(e=>e.hour==null)];
+ return all.slice(0,cap).map(e=>`<span class="event-pill${e.holiday?' holiday':''}${e.birthday?' birthday':''}" title="${esc(e.text)}">${esc(e.text)}</span>`).join('')+(all.length>cap?`<span class="event-more">+${all.length-cap} weitere</span>`:'');
+}
 function renderWeek(){
-  const start = new Date(currentDate);
-  const dayIndex = (start.getDay()+6)%7;
-  start.setDate(start.getDate() - dayIndex);
-  const days = [];
-  for(let i=0;i<7;i++){ const d=new Date(start); d.setDate(start.getDate()+i); days.push(d); }
-
-  let html = `<div class="week-grid">`;
-  html += `<div></div>`;
-  days.forEach(d => html += `<div style="text-align:center;border-bottom:1px solid #2b2b2b;padding:6px">${['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][(d.getDay()+6)%7]}<br>${d.getDate()}</div>`);
-
-  // all-day row label + stacked containers
-  html += `<div class="all-day-label">All Day</div>`;
-  days.forEach(d => html += `<div class="all-day-row" data-date="${keyFromDate(d)}"></div>`);
-
-  // hourly grid
-  for(let h=0; h<24; h++){
-    html += `<div class="hour-label">${pad(h)}:00</div>`;
-    days.forEach(d => html += `<div class="hour-cell" data-date="${keyFromDate(d)}" data-hour="${h}"></div>`);
+ const first=cloneDate(currentDate);first.setDate(first.getDate()-(first.getDay()+6)%7);
+ const dates=Array.from({length:7},(_,i)=>new Date(first.getFullYear(),first.getMonth(),first.getDate()+i,12));
+ let html='<div class="week-grid"><div class="grid-corner"></div>';
+ for(const d of dates)html+=`<div class="week-heading${dateKey(d)===dateKey(today())?' is-today':''}">${weekdays[(d.getDay()+6)%7]} <b>${d.getDate()}</b></div>`;
+ html+='<div class="all-day-label">Ganztägig</div>';
+ for(const d of dates)html+=`<button type="button" class="all-day-row" data-date="${dateKey(d)}">${daySummaryHtml(dateKey(d))}</button>`;
+ for(let h=0;h<24;h++){
+  html+=`<div class="hour-label">${pad(h)}:00</div>`;
+  for(const d of dates){const key=dateKey(d),timed=forDate(key).normal.filter(e=>e.hour===h);
+   html+=`<button type="button" class="hour-cell" data-date="${key}" data-hour="${h}">${smallEvents(timed,2)}</button>`;
   }
-  html += `</div>`;
-  views.week.innerHTML = html;
-
-  // populate all-day (stacked)
-  days.forEach(d=>{
-    const ds = keyFromDate(d);
-    const container = document.querySelector(`.all-day-row[data-date="${ds}"]`);
-    if(!container) return;
-
-    const hol = germanHolidays(d.getFullYear()).find(h=>h.date===ds);
-    if(hol){
-      const el = document.createElement('div'); el.className='event holiday'; el.textContent = hol.label; container.appendChild(el);
-    }
-    birthdaysForDateKey(ds).forEach(b=>{
-      const el = document.createElement('div'); el.className='event birthday'; el.textContent = b.text; container.appendChild(el);
-    });
-    (events[ds]||[]).forEach(ev=>{
-      if(ev.hour===undefined || ev.hour===null){
-        if(!ev.birthday){
-          const el = document.createElement('div'); el.className='event'; el.textContent = ev.text; container.appendChild(el);
-        }
-      }
-    });
-  });
-
-  // timed events
-  for(const ds in events){
-    (events[ds]||[]).forEach(ev=>{
-      if(ev.hour!==undefined && ev.hour!==null && !ev.birthday){
-        const cell = document.querySelector(`.hour-cell[data-date="${ds}"][data-hour="${ev.hour}"]`);
-        if(cell){ const el=document.createElement('div'); el.className='event'; el.textContent = ev.text; cell.appendChild(el); }
-      }
-    });
-  }
-
-  // click handlers
-  document.querySelectorAll('.hour-cell, .all-day-row').forEach(el=>{
-    el.addEventListener('click', ()=> {
-      const hr = el.dataset.hour ? parseInt(el.dataset.hour,10) : undefined;
-      openModal(el.dataset.date, hr);
-    });
-  });
+ }
+ views.week.innerHTML=html+'</div>';
+ views.week.querySelectorAll('.hour-cell,.all-day-row').forEach(el=>el.addEventListener('click',()=>openModal(el.dataset.date,el.dataset.hour!==undefined?Number(el.dataset.hour):undefined)));
 }
-
-/* ---------------- Day ---------------- */
 function renderDay(){
-  const y = currentDate.getFullYear(), m = currentDate.getMonth(), d = currentDate.getDate();
-  const ds = `${y}-${m+1}-${d}`;
-  let html = `<div class="day-grid">`;
-  html += `<div class="all-day-label">All Day</div><div class="all-day-row" data-date="${ds}"></div>`;
-  for(let h=0; h<24; h++){
-    html += `<div class="hour-label">${pad(h)}:00</div><div class="hour-cell" data-date="${ds}" data-hour="${h}"></div>`;
-  }
-  html += `</div>`;
-  views.day.innerHTML = html;
-  views.day.style.overflowY = 'auto';
-
-  // fill all-day
-  const container = document.querySelector(`.all-day-row[data-date="${ds}"]`);
-  if(container){
-    const hol = germanHolidays(y).find(h=>h.date===ds);
-    if(hol){ const el=document.createElement('div'); el.className='event holiday'; el.textContent=hol.label; container.appendChild(el); }
-    birthdaysForDateKey(ds).forEach(b=>{ const el=document.createElement('div'); el.className='event birthday'; el.textContent=b.text; container.appendChild(el); });
-    (events[ds]||[]).forEach(ev=>{
-      if(ev.hour===undefined || ev.hour===null){
-        if(!ev.birthday){ const el=document.createElement('div'); el.className='event'; el.textContent=ev.text; container.appendChild(el); }
-      }
-    });
-  }
-
-  // timed events
-  (events[ds]||[]).forEach(ev=>{
-    if(ev.hour!==undefined && ev.hour!==null && !ev.birthday){
-      const c = document.querySelector(`.hour-cell[data-date="${ds}"][data-hour="${ev.hour}"]`);
-      if(c){ const el=document.createElement('div'); el.className='event'; el.textContent = ev.text; c.appendChild(el); }
-    }
-  });
-
-  // clicks
-  document.querySelectorAll('.hour-cell, .all-day-row').forEach(el=>{
-    el.addEventListener('click', ()=> {
-      const hr = el.dataset.hour ? parseInt(el.dataset.hour,10) : undefined;
-      openModal(el.dataset.date, hr);
-    });
-  });
+ const key=dateKey(currentDate);let html='<div class="day-grid"><div class="all-day-label">Ganztägig</div>';
+ html+=`<button type="button" class="all-day-row" data-date="${key}">${daySummaryHtml(key,5)}</button>`;
+ for(let hour=0;hour<24;hour++){
+  const timed=forDate(key).normal.filter(e=>e.hour===hour);
+  html+=`<div class="hour-label">${pad(hour)}:00</div><button type="button" class="hour-cell" data-date="${key}" data-hour="${hour}">${smallEvents(timed,3)}</button>`;
+ }
+ views.day.innerHTML=html+'</div>';
+ views.day.querySelectorAll('.hour-cell,.all-day-row').forEach(el=>el.addEventListener('click',()=>openModal(el.dataset.date,el.dataset.hour!==undefined?Number(el.dataset.hour):undefined)));
 }
-
-/* ---------------- Year ---------------- */
-function renderYear() {
-  const y = currentDate.getFullYear();
-  const holidays = germanHolidays(y);
-  let html = `<div class="year-grid">`;
-
-  for (let m = 0; m < 12; m++) {
-    const monthName = new Date(y, m, 1).toLocaleString(undefined, { month: 'long' });
-    html += `<div class="year-month" data-month="${m}" data-year="${y}">
-               <strong>${monthName}</strong>
-               <div class="mini-month">`;
-
-    const first = new Date(y, m, 1);
-    const firstIdx = (first.getDay() + 6) % 7;
-    const lastDate = new Date(y, m + 1, 0).getDate();
-
-    for (let i = 0; i < firstIdx; i++) html += `<div class="mini-day"></div>`;
-
-    for (let d = 1; d <= lastDate; d++) {
-      const ds = `${y}-${m + 1}-${d}`;
-      const hol = holidays.find(h => h.date === ds);
-      const evs = normalEventsForDate(ds);
-      const bds = birthdaysForDateKey(ds);
-
-      let dots = '';
-      if (evs.length) dots += `<span class="year-dot event"></span>`;
-      if (bds.length) dots += `<span class="year-dot birthday"></span>`;
-
-    const isToday = (new Date(y, m, d)).toDateString() === (new Date()).toDateString();
-
-    html += `<div class="mini-day">
-           <span class="mini-number ${hol ? 'holiday' : ''} ${isToday ? 'today' : ''}">
-             ${d}
-           </span>
-           ${dots ? `<div class="mini-dots">${dots}</div>` : ''}
-         </div>`;
-
-    }
-
-    html += `</div></div>`;
-  }
-
-  html += `</div>`;
-  views.year.innerHTML = html;
-
-  // Click to open selected month
-  document.querySelectorAll('.year-month').forEach(el => {
-    el.addEventListener('click', () => {
-      const yy = parseInt(el.dataset.year, 10);
-      const mm = parseInt(el.dataset.month, 10);
-      currentDate = new Date(yy, mm, 1);
-      setView('month');
-    });
-  });
+function closeModal(){modal.classList.add('hidden');modal.setAttribute('aria-hidden','true');modalOpenFor=null;}
+function openModal(key,hour){
+ if(!localDate(key))return;
+ modalOpenFor={date:key,hour};modal.classList.remove('hidden');modal.setAttribute('aria-hidden','false');
+ modalDate.textContent=summaryDate(key)+(hour!==undefined?` · ${pad(hour)}:00`:'');
+ eventInput.value='';birthdayBox.checked=false;hourBox.disabled=false;hourBox.checked=hour!==undefined;
+ hourSelect.innerHTML=Array.from({length:24},(_,h)=>`<option value="${h}">${pad(h)}:00</option>`).join('');
+ hourSelect.disabled=hour===undefined;if(hour!==undefined)hourSelect.value=String(hour);
+ updateEventList(key);eventInput.focus({preventScroll:true});
 }
-
-
-/* ---------------- Modal & CRUD ---------------- */
-let modalOpenFor = null;
-function openModal(dateStr, hour){
-  modalOpenFor = { date: dateStr, hour: hour };
-  modal.classList.remove('hidden'); modal.setAttribute('aria-hidden','false');
-  modalDate.textContent = new Date(dateStr).toDateString() + (hour!==undefined ? ` ${pad(hour)}:00` : '');
-  eventInput.value = '';
-
-  // fill hour select
-  eventHourSelect.innerHTML = '';
-  for(let h=0; h<24; h++){ const opt=document.createElement('option'); opt.value=h; opt.text=`${pad(h)}:00`; eventHourSelect.appendChild(opt); }
-  if(hour!==undefined){ eventHourCheckbox.checked = true; eventHourSelect.disabled = false; eventHourSelect.value = hour; }
-  else { eventHourCheckbox.checked = false; eventHourSelect.disabled = true; }
-
-  if(eventBirthdayCheckbox) eventBirthdayCheckbox.checked = false;
-
-  renderEventList(dateStr);
+function updateEventList(key){
+ eventList.replaceChildren();const data=forDate(key);
+ const addRow=(label,type,sourceKey=null,index=null)=>{
+  const li=document.createElement('li'),span=document.createElement('span');span.textContent=label;li.appendChild(span);
+  if(type!=='holiday'){
+   const del=document.createElement('button');del.type='button';del.className='delete-event';del.textContent='Entfernen';del.setAttribute('aria-label','Eintrag entfernen: '+label);
+   del.addEventListener('click',()=>{
+    if(!events[sourceKey]||!events[sourceKey][index])return;
+    events[sourceKey].splice(index,1);if(!events[sourceKey].length)delete events[sourceKey];
+    if(saveEvents()){updateEventList(key);render()}
+   });li.appendChild(del);
+  }else li.classList.add('holiday');
+  eventList.appendChild(li);
+ };
+ if(data.holiday)addRow(data.holiday,'holiday');
+ for(const bd of data.birthdays)addRow('🎂 '+bd.text,'birthday',bd.originalKey,bd.index);
+ (events[key]||[]).forEach((ev,i)=>{if(!ev.birthday)addRow((ev.hour!=null?`${pad(ev.hour)}:00 · `:'')+ev.text,'normal',key,i)});
+ if(!eventList.children.length){const li=document.createElement('li');li.className='event-empty';li.textContent='Noch keine Einträge';eventList.appendChild(li)}
 }
-
-function renderEventList(dateStr){
-  eventList.innerHTML = '';
-  const [y] = dateStr.split('-').map(Number);
-  const holiday = germanHolidays(y).find(h=>h.date===dateStr);
-  if(holiday){
-    const li=document.createElement('li'); li.textContent=holiday.label; li.style.color='var(--holiday)'; li.style.fontWeight='bold'; eventList.appendChild(li);
-  }
-
-  // birthdays deduped
-  const bdays = birthdaysForDateKey(dateStr);
-  bdays.forEach((b, idx)=>{
-    const li=document.createElement('li'); li.textContent=`🎂 ${b.text}`;
-    const del=document.createElement('button'); del.textContent='Delete'; del.style.cssText='float:right;background:#900;color:#fff;border:none;padding:4px 6px;border-radius:4px';
-    del.addEventListener('click', ()=>{
-      const lower = b.text.trim().toLowerCase();
-      outer: for(const k in events){
-        const arr = events[k];
-        for(let i=arr.length-1;i>=0;i--){
-          if(arr[i] && arr[i].birthday && arr[i].text.trim().toLowerCase()===lower){
-            arr.splice(i,1);
-            if(arr.length===0) delete events[k];
-            break outer;
-          }
-        }
-      }
-      localStorage.setItem('events', JSON.stringify(events));
-      renderEventList(dateStr); render();
-    });
-    li.appendChild(del); eventList.appendChild(li);
-  });
-
-  (events[dateStr]||[]).forEach((e, idx)=>{
-    if(!e.birthday){
-      const li=document.createElement('li'); li.textContent = e.hour!==undefined ? `${pad(e.hour)}:00 — ${e.text}` : e.text;
-      const del=document.createElement('button'); del.textContent='Delete'; del.style.cssText='float:right;background:#900;color:#fff;border:none;padding:4px 6px;border-radius:4px';
-      del.addEventListener('click', ()=>{
-        events[dateStr].splice(idx,1);
-        if(events[dateStr].length===0) delete events[dateStr];
-        localStorage.setItem('events', JSON.stringify(events));
-        renderEventList(dateStr); render();
-      });
-      li.appendChild(del); eventList.appendChild(li);
-    }
-  });
-}
-
-addEventBtn.addEventListener('click', ()=>{
-  const txt = eventInput.value.trim();
-  if(!txt) return alert('Enter event text');
-  const ds = modalOpenFor.date;
-  if(!events[ds]) events[ds]=[];
-  const ev = { text: txt };
-  if(eventBirthdayCheckbox && eventBirthdayCheckbox.checked){
-    ev.birthday = true;
-  } else if(eventHourCheckbox && eventHourCheckbox.checked){
-    ev.hour = parseInt(eventHourSelect.value,10);
-  }
-  events[ds].push(ev);
-  localStorage.setItem('events', JSON.stringify(events));
-  modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true');
-  render();
+$('addEventBtn').addEventListener('click',()=>{
+ if(!modalOpenFor)return;
+ const txt=eventInput.value.trim();if(!txt){eventInput.focus();return}
+ const key=modalOpenFor.date,ev={text:txt.slice(0,250)};
+ if(birthdayBox.checked)ev.birthday=true;
+ else if(hourBox.checked)ev.hour=safeHour(hourSelect.value)??0;
+ if(!events[key])events[key]=[];events[key].push(ev);
+ if(!saveEvents()){events[key].pop();if(!events[key].length)delete events[key];return}
+ closeModal();render();
 });
-
-closeModalBtn.addEventListener('click', ()=>{ modal.classList.add('hidden'); modal.setAttribute('aria-hidden','true'); });
-
-if(eventHourCheckbox) eventHourCheckbox.addEventListener('change', ()=> { eventHourSelect.disabled = !eventHourCheckbox.checked; });
-if(eventBirthdayCheckbox) eventBirthdayCheckbox.addEventListener('change', ()=>{
-  if(eventBirthdayCheckbox.checked){
-    if(eventHourCheckbox){ eventHourCheckbox.checked=false; eventHourCheckbox.disabled=true; }
-    eventHourSelect.disabled = true;
-  } else {
-    if(eventHourCheckbox) eventHourCheckbox.disabled = false;
-  }
+$('closeModalBtn').addEventListener('click',closeModal);
+modal.addEventListener('pointerdown',e=>{if(e.target===modal)closeModal()});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!modal.classList.contains('hidden'))closeModal();
+ if(e.key==='Enter'&&document.activeElement===eventInput&&!modal.classList.contains('hidden')){$('addEventBtn').click()}
 });
-
-/* ---------------- Navigation ---------------- */
-navBtns.forEach(b=> b.addEventListener('click', ()=> setView(b.dataset.view)));
-
-todayBtn.addEventListener('click', ()=> {
-  currentDate = new Date();
-  // requirement: Today always shows Month view and highlight today
-  setView('month');
+hourBox.addEventListener('change',()=>{hourSelect.disabled=!hourBox.checked||birthdayBox.checked});
+birthdayBox.addEventListener('change',()=>{
+ hourBox.disabled=birthdayBox.checked;
+ if(birthdayBox.checked)hourBox.checked=false;
+ hourSelect.disabled=birthdayBox.checked||!hourBox.checked;
 });
-
-/* Prev / Next (keep current view) */
-prevBtn.addEventListener('click', ()=> {
-  if(currentView==='day') currentDate.setDate(currentDate.getDate()-1);
-  else if(currentView==='week') currentDate.setDate(currentDate.getDate()-7);
-  else if(currentView==='month') currentDate.setMonth(currentDate.getMonth()-1);
-  else if(currentView==='year') currentDate.setFullYear(currentDate.getFullYear()-1);
-  render();
-});
-nextBtn.addEventListener('click', ()=> {
-  if(currentView==='day') currentDate.setDate(currentDate.getDate()+1);
-  else if(currentView==='week') currentDate.setDate(currentDate.getDate()+7);
-  else if(currentView==='month') currentDate.setMonth(currentDate.getMonth()+1);
-  else if(currentView==='year') currentDate.setFullYear(currentDate.getFullYear()+1);
-  render();
-});
-
-/* ---------------- Swipe ---------------- */
-let startX=0, startY=0;
-calendarArea.addEventListener('touchstart', e=> { startX = e.changedTouches[0].screenX; startY = e.changedTouches[0].screenY; }, { passive:true });
-calendarArea.addEventListener('touchend', e=> {
-  const dx = e.changedTouches[0].screenX - startX, dy = e.changedTouches[0].screenY - startY;
-  if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)){ if(dx>0) prevBtn.click(); else nextBtn.click(); }
-}, { passive:true });
-
-/* ---------------- Layout adjustments ---------------- */
-function adjustRowHeight(){
-  const footer = document.querySelector('.footer');
-  const footerRect = footer ? footer.getBoundingClientRect() : { height: 0 };
-  const available = window.innerHeight - footerRect.height;
-  document.querySelectorAll('.view').forEach(v=> v.style.height = `${available}px`);
-
-  const mg = document.querySelector('.month-grid');
-  if(mg){
-    const weekdays = document.querySelector('.weekdays');
-    const weekdaysH = weekdays ? weekdays.getBoundingClientRect().height : 34;
-    const rows = Math.ceil(mg.children.length / 7);
-    const rowHeight = Math.max(56, Math.floor((available - weekdaysH - 8) / rows));
-    document.documentElement.style.setProperty('--row-height', `${rowHeight}px`);
-  }
-}
-window.addEventListener('resize', adjustRowHeight);
-
-/* ---------------- Init ---------------- */
+navBtns.forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+$('todayBtn').addEventListener('click',()=>{currentDate=cloneDate(today());setView('month')});
+$('prevBtn').addEventListener('click',()=>{currentDate=stepCalendar(currentDate,currentView,-1);render()});
+$('nextBtn').addEventListener('click',()=>{currentDate=stepCalendar(currentDate,currentView,1);render()});
+let start=null;
+$('calendarArea').addEventListener('touchstart',e=>{
+ if(e.touches.length!==1)return;
+ const t=e.touches[0];start={x:t.clientX,y:t.clientY,scrollY:e.target.closest('.year-grid,.week-grid,.day-grid')?.scrollTop||0};
+},{passive:true});
+$('calendarArea').addEventListener('touchend',e=>{
+ if(!start||e.changedTouches.length!==1)return;
+ const t=e.changedTouches[0],dx=t.clientX-start.x,dy=t.clientY-start.y;start=null;
+ // Swipe navigation only in month view. Week and year must remain scrollable.
+ if(currentView==='month'&&Math.abs(dx)>85&&Math.abs(dx)>2*Math.abs(dy)){$(dx>0?'prevBtn':'nextBtn').click()}
+},{passive:true});
 setView('month');
-window.addEventListener('load', ()=> { adjustRowHeight(); render(); });
-
-
-
-
