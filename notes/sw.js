@@ -1,0 +1,50 @@
+/* IVY Notes V4 - app shell only. User notes remain in localStorage, never in Cache Storage. */
+const CACHE_NAME = 'ivy-notes-shell-v4';
+const PREFIX = 'ivy-notes-shell-';
+const APP_SHELL = ['./','./index.html','./app.css','./app.js'];
+const OPTIONAL = ['./manifest.webmanifest','./icon-192.png','./icon-512.png','./favicon-32x32.png','./apple-touch-icon.png'];
+const scope = new URL(self.registration.scope);
+const toUrl = path => new URL(path, scope).href;
+const allowedPaths = new Set([...APP_SHELL,...OPTIONAL].map(toUrl));
+
+self.addEventListener('install', event => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.addAll(APP_SHELL);
+    await Promise.all(OPTIONAL.map(async path => {
+      try { const response = await fetch(toUrl(path), {cache:'no-store'}); if(response.ok) await cache.put(toUrl(path),response); } catch(_){}
+    }));
+    await self.skipWaiting();
+  })());
+});
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    const names = await caches.keys();
+    await Promise.all(names.filter(name=>name.startsWith(PREFIX)&&name!==CACHE_NAME).map(name=>caches.delete(name)));
+    await self.clients.claim();
+  })());
+});
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  if(request.method!=='GET') return;
+  const url = new URL(request.url);
+  if(url.origin!==self.location.origin) return;
+  const isPage = request.mode==='navigate';
+  if(!isPage && !allowedPaths.has(url.href)) return;
+  event.respondWith((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const fallback = isPage ? toUrl('./index.html') : url.href;
+    try {
+      const response = await fetch(request);
+      if(response.ok && response.type!=='opaque'){
+        // Store one canonical copy of the app's HTML, even for GitHub Pages /repo/.
+        await cache.put(isPage ? toUrl('./index.html') : url.href,response.clone());
+      }
+      return response;
+    } catch(error){
+      const cached = await cache.match(fallback);
+      if(cached)return cached;
+      throw error;
+    }
+  })());
+});
