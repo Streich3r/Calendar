@@ -92,3 +92,10 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid 
 .ivy-calendar-linked-note{border:1px solid rgba(73,213,255,.25);background:rgba(31,143,194,.1);border-radius:10px;padding:4px!important}
 .ivy-open-note{background:transparent;color:#9ceaff;border:0;padding:10px;text-align:left;cursor:pointer;font:inherit;width:100%;overflow-wrap:anywhere}
 .ivy-open-note:hover{background:rgba(76,211,255,.13)}
+
+/* Organizer V2: date-specific note contents in calendar dialog */
+.event-list li.ivy-calendar-linked-note{display:block;align-items:initial;padding:11px 12px!important;background:linear-gradient(125deg,rgba(20,57,85,.42),rgba(21,28,60,.55))}
+.ivy-note-section{width:100%;min-width:0}
+.ivy-note-section strong{display:block;color:#a8efff;font-weight:650;margin:0 0 5px}
+.ivy-note-excerpt{white-space:pre-wrap;overflow-wrap:anywhere;color:#edf5ff;line-height:1.55;max-height:220px;overflow-y:auto;font-size:13px;padding:3px 0 8px}
+.ivy-note-section .ivy-open-note{display:inline-block;width:auto;margin-top:2px;padding:7px 11px;border:1px solid #3b7797;border-radius:8px;background:#102c44;font-size:12px}

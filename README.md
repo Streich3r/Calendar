@@ -1,15 +1,12 @@
-# IVY Organizer V1
+# IVY Organizer V2
 
-Eine gemeinsame PWA aus den originalen Notes- und Calendar-Projekten. `index.html` ist der Startpunkt. Inhalte aus beiden Apps sind weiterhin lokal gespeichert.
+Eine PWA mit Kalender als Startansicht und Notizen als zweitem Tab.
 
-## Verknüpfung
-In Notizen über **Datum** einen Kalendertag wählen und die Notiz speichern. Sie erscheint im Kalender am entsprechenden Tag (Monat/Jahr als Markierung, Tag/Woche als Eintrag) und ist im Datum-Dialog anklickbar; der Klick öffnet den Rich-Text-Editor der Notiz. Über **Datum lösen** kann die Verknüpfung entfernt werden.
+## Datierte Notizen
+Jeder über die Datumsfunktion eingefügte Datumsstempel wird als Beginn eines eigenen Abschnitts erkannt. Der Kalender zeigt am jeweiligen Tag ausschließlich den Text bis zum nächsten Datumsstempel. Ältere Notizen mit nur einem `date`-Feld bleiben kompatibel. Im Kalenderdialog ist der jeweilige Abschnitt lesbar, darunter öffnet eine Schaltfläche die gesamte Notiz zur Bearbeitung. Die eigentlichen Notizen bleiben unverändert.
 
-## Vorhandene Daten
-Bei gleicher Origin (gleiche Domain+Port+Protokoll) und im selben Browserprofil liest die neue App die bisherigen `notes`, `events` und Gruppen aus LocalStorage. Bei einer anderen GitHub-Pages-Domain oder anderem Ursprung werden Browserdaten aus Sicherheitsgründen **nicht automatisch übernommen**. Notes enthält Import/Export für Notizen. Für die bestehenden Kalenderdaten ist vor dem Wechsel eine Sicherung/Übernahme nötig; die alte PWA nicht löschen, bevor der Umzug geprüft wurde. Die App ist ohne Cloud-Synchronisierung.
+## Updates
+Die Startseite prüft alle 5 Minuten, beim Aktivieren und beim Online-Gehen auf eine andere veröffentlichte Version. Das Update-Popup erscheint nur, wenn die Versionskennung in der veröffentlichten `index.html` von der aktuell laufenden Version abweicht. „Später“ unterdrückt denselben Hinweis für die Sitzung; „Jetzt aktualisieren“ lädt die neue Seite. Für folgende Releases die `ivy-organizer-build`-Kennung in `index.html` ändern. Keine Popups allein durch Service-Worker-Neustart.
 
-## Installieren
-Alle Dateien/Ordner des ZIP gemeinsam auf statisches HTTPS Hosting (z. B. GitHub Pages) hochladen. `index.html` im Stamm öffnen und PWA installieren. Kein Buildprozess, keine Abhängigkeiten.
-
-## Hinweis
-Die getrennten Originaloberflächen sind in die gemeinsame Anwendung integriert. Datumsverknüpfungen sind neue Metadaten, bestehende rein textuelle Datumsstempel sind nicht automatisch als Kalendertermine interpretierbar. Bestehende Bilder verwenden die originale Notes-IndexedDB und sind nur auf demselben Origin/Browserprofil verfügbar.
+## Deployment / Datenspeicher
+Alle Dateien gemeinsam auf dieselbe Domain und unter denselben URL-Pfad hochladen. Lokal gespeicherte Daten sind an Browser und Origin gebunden; Backups aus früheren Domains müssen ggf. importiert werden. Vor dem ersten Wechsel Backup von Notes und Kalender erstellen. Offline-PWA funktioniert nach erstem erfolgreichen Laden.

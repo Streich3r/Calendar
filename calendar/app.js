@@ -37,25 +37,66 @@ function loadEvents(){
     return out;
   }catch(err){console.warn('Kalenderdaten konnten nicht geladen werden; Originaldaten bleiben erhalten.',err);return {}}
 }
+// Extract individual DATE STAMP blocks from a rich-text note.
+// Each matching date receives ONLY text until the next date stamp.
+const MONTHS={januar:1,februar:2,'märz':3,maerz:3,april:4,mai:5,juni:6,juli:7,august:8,september:9,oktober:10,november:11,dezember:12};
+const GERMAN_DATE=/📅\s*(?:(?:Montag|Dienstag|Mittwoch|Donnerstag|Freitag|Samstag|Sonntag)\s*,?\s*)?(\d{1,2})\.\s*(Januar|Februar|März|Maerz|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember)\s+(\d{4})\s*(?:[—–-]\s*)?/gi;
+function toReadableText(html){
+ const doc=new DOMParser().parseFromString(String(html||''),'text/html');
+ const root=doc.body;const parts=[];
+ function walk(node){
+  if(node.nodeType===Node.TEXT_NODE){parts.push(node.textContent||'');return;}
+  if(node.nodeType!==Node.ELEMENT_NODE)return;
+  const tag=node.tagName;
+  if(['SCRIPT','STYLE','NOSCRIPT'].includes(tag))return;
+  if(tag==='BR'){parts.push('\n');return;}
+  if(tag==='IMG'){parts.push(' [Bild] ');return;}
+  if(tag==='INPUT'&&node.type==='checkbox'){parts.push(node.checked?'☑ ':'☐ ');return;}
+  const block=['DIV','P','LI','BLOCKQUOTE','UL','OL','H1','H2','H3','H4'].includes(tag);
+  if(block)parts.push('\n');
+  for(const child of node.childNodes)walk(child);
+  if(block)parts.push('\n');
+ }
+ for(const child of root.childNodes)walk(child);
+ return parts.join('').replace(/\u00a0/g,' ').replace(/[ \t]+\n/g,'\n').replace(/\n[ \t]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+function datedSections(note){
+ const txt=toReadableText(note.content||'');
+ const matches=[...txt.matchAll(GERMAN_DATE)];
+ if(!matches.length){return /^\d{4}-\d{2}-\d{2}$/.test(note.date||'')?[{date:note.date,text:txt}]:[];}
+ const sections=[];
+ for(let i=0;i<matches.length;i++){
+  const m=matches[i],month=MONTHS[m[2].toLocaleLowerCase('de-DE')],day=+m[1],year=+m[3];
+  if(!month)continue;
+  const date=`${year}-${pad(month)}-${pad(day)}`;
+  if(!localDate(date))continue;
+  // Do not include preceding/following dates or unrelated note sections.
+  const text=txt.slice(m.index+m[0].length,i+1<matches.length?matches[i+1].index:txt.length)
+   .replace(/^[\s—–-]+/,'').replace(/[\s]+$/,'');
+  sections.push({date,text});
+ }
+ return sections;
+}
 function linkedNotes(){
  try{
   const arr=JSON.parse(localStorage.getItem('notes')||'[]');
-  return Array.isArray(arr)?arr.filter(n=>n&&typeof n.id==='string'&&typeof n.date==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(n.date)):[];
- }catch{return []}
+  if(!Array.isArray(arr))return [];
+  return arr.filter(n=>n&&typeof n.id==='string').flatMap(n=>datedSections(n).map((section,i)=>({id:n.id,title:n.title||'',date:section.date,sectionText:section.text,sectionIndex:i})));
+ }catch(err){console.warn('Notizverknüpfungen konnten nicht geladen werden',err);return []}
 }
+let linkedNotesCache=null, linkedNotesRaw=null;
 function notesForDate(key){
  const canonical=localDate(key);if(!canonical)return [];
  const day=`${canonical.getFullYear()}-${pad(canonical.getMonth()+1)}-${pad(canonical.getDate())}`;
- return linkedNotes().filter(n=>n.date===day);
+ const raw=localStorage.getItem('notes')||'[]';
+ if(raw!==linkedNotesRaw){linkedNotesRaw=raw;linkedNotesCache=linkedNotes();}
+ return linkedNotesCache.filter(n=>n.date===day);
 }
 function labelNote(n){
- if(n.title?.trim())return n.title.trim();
- const box=document.createElement('div');box.innerHTML=String(n.content||'');
- return (box.textContent||'Notiz').trim().slice(0,85)||'Notiz';
+ const own=(n.sectionText||'').replace(/\s+/g,' ').trim();
+ return own ? own.slice(0,95) : (n.title?.trim() || 'Notiz (ohne Inhalt für dieses Datum)');
 }
-function openLinkedNote(id){
- window.parent.postMessage({type:'ivy-open-note',id},location.origin);
-}
+function openLinkedNote(id){window.parent.postMessage({type:'ivy-open-note',id},location.origin);}
 let events=loadEvents();
 let currentDate=cloneDate(today());
 let currentView='month';
@@ -229,9 +270,14 @@ function updateEventList(key){
  if(data.holiday)addRow(data.holiday,'holiday');
  for(const note of notesForDate(key)){
   const li=document.createElement('li');li.className='ivy-calendar-linked-note';
+  const content=document.createElement('div');content.className='ivy-note-section';
+  const heading=document.createElement('strong');heading.textContent='📝 '+(note.title?.trim()||'Notiz');content.appendChild(heading);
+  const preview=document.createElement('div');preview.className='ivy-note-excerpt';
+  preview.textContent=note.sectionText?.trim()||'(Für dieses Datum ist noch kein Text hinterlegt)';
+  content.appendChild(preview);
   const btn=document.createElement('button');btn.type='button';btn.className='ivy-open-note';
-  btn.textContent='📝 '+labelNote(note)+' · Notiz öffnen';btn.addEventListener('click',()=>openLinkedNote(note.id));
-  li.appendChild(btn);eventList.appendChild(li);
+  btn.textContent='Notiz öffnen / bearbeiten';btn.addEventListener('click',()=>openLinkedNote(note.id));
+  content.appendChild(btn);li.appendChild(content);eventList.appendChild(li);
  }
  for(const bd of data.birthdays)addRow('🎂 '+bd.text,'birthday',bd.originalKey,bd.index);
  (events[key]||[]).forEach((ev,i)=>{if(!ev.birthday)addRow((ev.hour!=null?`${pad(ev.hour)}:00 · `:'')+ev.text,'normal',key,i)});
